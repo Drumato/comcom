@@ -93,5 +93,6 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+  generate(rootnode);
   return 0;
 }

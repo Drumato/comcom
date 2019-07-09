@@ -211,42 +211,11 @@ enum {
   N_INTEGER,   // 30
   N_STRING,    // "30"
   N_IDENT,     // x
-  N_SIZEOF,    // sizeof(int)
-  N_TYPE,      // int,char,float etc...
-  N_INITDEF,   // int x = 30;
-  N_VARDEC,    // int x;
-  N_DEREF,     //*x
-  N_ADDR,      //&x
-  N_CALL,      // x(3,0)
-  N_INDEX,     // x[0]
-  N_PLUS,      //+30
-  N_MINUS,     //-30
-  N_PREINC,    //++30
-  N_PREDEC,    //--30
-  N_SUFINC,    // 30++
-  N_SUFDEC,    // 30--
   N_ADD,       // 30 + 50
   N_SUB,       // 30 - 50
   N_MUL,       // 30 * 50
   N_DIV,       // 30 / 50
-  N_SHL,       // 1 << 2
-  N_SHR,       // 1 >> 2
-  N_GE,        // 1 >= 2
-  N_GT,        // 1 > 2
-  N_LE,        // 1 <= 2
-  N_LT,        // 1 < 2
-  N_EQ,        // 1 == 2
-  N_NOT_EQ,    // 1 != 2
-  N_LOGOR,     // 1 || 2
-  N_LOGAND,    // 1 && 1
-  N_BITOR,     // 1 | 2
-  N_BITXOR,    // 1 ^ 2
-  N_BITAND,    // 1 & 2
   N_RETURN,    // return <expr>
-  N_IF,        // if <expr> {}
-  N_ELSE,      // else <expr> {}
-  N_FOR,       // for <expr> {}
-  N_WHILE,     // while <expr> {}
   N_EXPRSTMT,  // printf();
   N_INVALID,
 };
@@ -313,3 +282,6 @@ Rootnode *parse(Array *tokens);
 Node *new_binop(int nty, Node *lch, Node *rch);
 Node *new_number(const char *input);
 Node *new_string(const char *input);
+
+/*gen.c*/
+void generate(Rootnode *rootnode);

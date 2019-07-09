@@ -1,5 +1,4 @@
 #include "comcom.h"
-
 char* dump_error(int ty) {
   switch (ty) {
     case PARSE:

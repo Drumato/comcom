@@ -105,9 +105,6 @@ static Node *expr_stmt(Parser *parser) {
   expr_st->nty = N_EXPRSTMT;
   expr_st->expr = expr(parser);
   consume(parser, TK_SEMICOLON);
-  if (expr_st->expr->nty != N_CALL)  // replace in future
-    error_found(PARSE, format("expected funccall but got %s",
-                              nt_string(expr_st->expr->nty)));
   return expr_st;
 }
 static Node *stmt(Parser *parser) {

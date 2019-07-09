@@ -3,10 +3,10 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 comcom: $(OBJS)
-	cc -o $@ $(OBJS) $(LDFLAGS)
+	gcc -o $@ $(OBJS) $(LDFLAGS)
 
 test:
-	cc -o $@ $(OBJS) $(LDFLAGS)
+	gcc -o $@ $(OBJS) $(LDFLAGS)
 	./test.sh
 
 $(OBJS): comcom.h
