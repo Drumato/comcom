@@ -41,6 +41,27 @@ static void gen_expr(Node *node) {
       fprintf(out, "    push 0x%x\n", node->intval);
       break;
     default:
+      if (node->lch->nty == N_INTEGER && node->rch->nty == N_INTEGER) {
+        switch (node->nty) {
+          case N_ADD:
+            fprintf(out, "    push 0x%x\n",
+                    node->lch->intval + node->rch->intval);
+            break;
+          case N_SUB:
+            fprintf(out, "    push 0x%x\n",
+                    node->lch->intval - node->rch->intval);
+            break;
+          case N_MUL:
+            fprintf(out, "    push 0x%x\n",
+                    node->lch->intval * node->rch->intval);
+            break;
+          case N_DIV:
+            fprintf(out, "    push 0x%x\n",
+                    node->lch->intval / node->rch->intval);
+            break;
+        }
+        return;
+      }
       gen_expr(node->lch);
       gen_expr(node->rch);
       char *lop = reg64[regnum++];
@@ -57,11 +78,16 @@ static void gen_expr(Node *node) {
           fprintf(out, "    push %s\n", lop);
           break;
         case N_MUL:
-          fprintf(out, "    add %s, %s\n", lop, rop);
+          fprintf(out, "    mov rax, %s\n", lop);
+          fprintf(out, "    imul %s\n", rop);
+          fprintf(out, "    mov %s, rax\n", lop);
           fprintf(out, "    push %s\n", lop);
           break;
         case N_DIV:
-          fprintf(out, "    add %s, %s\n", lop, rop);
+          fprintf(out, "    mov rax, %s\n", lop);
+          fprintf(out, "    cqo\n");
+          fprintf(out, "    div %s\n", rop);
+          fprintf(out, "    mov %s, rax\n", lop);
           fprintf(out, "    push %s\n", lop);
           break;
       }
