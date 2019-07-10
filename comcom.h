@@ -61,7 +61,7 @@ bool startswith(const char *s1, const char *s2);
 
 char *format(char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void error(char *fmt, ...);
-
+void error_at(char *loc, char *fmt, ...);
 /* token.c */
 typedef enum {
   TK_RESERVED,
@@ -76,3 +76,10 @@ typedef struct Token {
   int val;
   char *str;
 } Token;
+
+/* parse.c */
+Token *tokenize(char *p);
+bool consume(char op);
+void expect(char op);
+int expect_number(void);
+bool at_eof(void);
