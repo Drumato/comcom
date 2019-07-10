@@ -109,14 +109,6 @@ Array *aryget_range(Array *array, int start, int end) {
   dst->length = end - start;
   return dst;
 }
-char *format(char *fmt, ...) {
-  char buf[2048];
-  va_list ap;
-  va_start(ap, fmt);
-  vsnprintf(buf, sizeof(buf), fmt, ap);
-  va_end(ap);
-  return strdup(buf);
-}
 
 Map *new_map(void) {
   Map *map = malloc(sizeof(Map));
@@ -144,4 +136,21 @@ int map_geti(Map *map, char *key, int default_) {
   for (int i = map->keys->length - 1; i >= 0; i--)
     if (!strcmp(map->keys->data[i], key)) return (intptr_t)map->vals->data[i];
   return default_;
+}
+
+char *format(char *fmt, ...) {
+  char buf[2048];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return strdup(buf);
+}
+
+void error(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
 }
