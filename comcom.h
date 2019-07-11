@@ -79,7 +79,7 @@ typedef struct Token {
 
 /* parse.c */
 Token *tokenize(char *p);
-bool consume(char op);
-void expect(char op);
-int expect_number(void);
-bool at_eof(void);
+bool consume(Token *token, char op);
+void expect(Token *token, char op);
+int expect_number(Token *token);
+bool at_eof(Token *token);
