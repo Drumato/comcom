@@ -70,16 +70,44 @@ typedef enum {
 } TokenKind;
 
 typedef struct Token Token;
-typedef struct Token {
+
+struct Token {
   TokenKind kind;
   Token *next;
   int val;
   char *str;
-} Token;
-
+  int len;
+};
+Token *token;
 /* parse.c */
 Token *tokenize(char *p);
-bool consume(Token *token, char op);
-void expect(Token *token, char op);
-int expect_number(Token *token);
-bool at_eof(Token *token);
+bool consume(char *op);
+void expect(char op);
+int expect_number(void);
+bool at_eof(void);
+/* node.c */
+typedef enum {
+  ND_ADD,   //+
+  ND_SUB,   //-
+  ND_MUL,   //
+  ND_DIV,   // /
+  ND_EQ,    // ==
+  ND_NTEQ,  // !=
+  ND_GT,    // <
+  ND_GTEQ,  // <=
+  ND_NUM,   // integer
+} NodeKind;
+
+typedef struct Node Node;
+struct Node {
+  NodeKind kind;
+  Node *lhs;
+  Node *rhs;
+  int val;
+};
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+Node *new_node_num(int val);
+
+Node *expr(void);
+/* genx86.c */
+void gen(Node *node);
