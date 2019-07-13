@@ -1,7 +1,15 @@
 #include "comcom.h"
+
 static bool consume(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
+static bool consume_return(void) {
+  if ((token->kind != TK_RETURN || strlen("return") != token->len ||
+       memcmp(token->str, "return", token->len)))
     return false;
   token = token->next;
   return true;
@@ -47,9 +55,15 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
+    if (!strncmp(p, "return", 6) && !isalnum(p[6])) {
+      cur = new_token(TK_RETURN, cur, p);
+      cur->len = 6;
+      p += 6;
+      continue;
+    }
     if (isalpha(*p)) {
       char *start = p;
-      while (isalpha(*p)) {
+      while (isalnum(*p)) {
         p++;
       }
       cur = new_token(TK_IDENT, cur, start);
@@ -180,8 +194,14 @@ static Node *assign(void) {
 }
 static Node *expr(void) { return assign(); }
 static Node *stmt(void) {
-  Node *node = expr();
-  expect(";");
+  Node *node = calloc(1, sizeof(Node));
+  if (consume_return()) {
+    node->kind = ND_RETURN;
+    node->lhs = expr();
+  } else {
+    node = expr();
+  }
+  if (!consume(";")) error("'%s' is not ';'", token->str);
   return node;
 }
 void program(void) {
@@ -223,6 +243,8 @@ char *nk_string(NodeKind nk) {
       return "gteq-node";
     case ND_NUM:  // integer
       return "num-node";
+    case ND_RETURN:  // integer
+      return "return-stmt";
     default:
       return "";
   }

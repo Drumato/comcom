@@ -67,6 +67,7 @@ typedef enum {
   TK_RESERVED,
   TK_IDENT,
   TK_NUM,
+  TK_RETURN,
   TK_EOF,
 } TokenKind;
 
@@ -101,6 +102,7 @@ typedef enum {
   ND_MUL,     //
   ND_DIV,     // /
   ND_ASSIGN,  //=
+  ND_RETURN,  // return-stmt
   ND_EQ,      // ==
   ND_NTEQ,    // !=
   ND_GT,      // <
