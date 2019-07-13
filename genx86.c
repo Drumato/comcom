@@ -43,6 +43,8 @@ void gen(Node *node) {
       printf("  setle al\n");
       printf("  movzb rax, al\n");
       break;
+    default:
+      break;
   }
   printf("  push rax\n");
 }

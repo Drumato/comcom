@@ -1,14 +1,15 @@
 #include "comcom.h"
 bool consume(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
+  if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
+       memcmp(token->str, op, token->len)))
     return false;
   token = token->next;
   return true;
 }
 
-void expect(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op)
+void expect(char *op) {
+  if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
+       memcmp(token->str, op, token->len)))
     error("'%c' isn't '%c'", token->str[0], op);
   token = token->next;
 }
@@ -40,15 +41,23 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
+    if (!strncmp(p, "<=", 2) || !strncmp(p, ">=", 2) || !strncmp(p, "==", 2) ||
+        !strncmp(p, "!=", 2)) {
+      cur = new_token(TK_RESERVED, cur, p);
+      cur->len = 2;
+      p += 2;
+    }
 
     if (strchr("+-*/()<>=!", *p) != NULL) {
       cur = new_token(TK_RESERVED, cur, p++);
+      cur->len = 1;
       continue;
     }
 
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p);
       cur->val = strtol(p, &p, 10);
+      cur->len = strlen(format("%d", cur->val));
       continue;
     }
 
@@ -62,7 +71,7 @@ Node *expr(void);
 Node *term(void) {
   if (consume("(")) {
     Node *node = expr();
-    expect(')');
+    expect(")");
     return node;
   }
   return new_node_num(expect_number());
@@ -122,7 +131,40 @@ Node *equality(void) {
       return node;
   }
 }
-Node *expr(void) {
-  Node *node = equality();
-  return equality();
+Node *expr(void) { return equality(); }
+char *tk_string(TokenKind tk) {
+  switch (tk) {
+    case TK_RESERVED:
+      return "RESERVED";
+    case TK_NUM:
+      return "NUMBER";
+    case TK_EOF:
+      return "EOF";
+    default:
+      return "";
+  }
+}
+char *nk_string(NodeKind nk) {
+  switch (nk) {
+    case ND_ADD:  //+
+      return "add-node";
+    case ND_SUB:  //-
+      return "sub-node";
+    case ND_MUL:  //
+      return "mul-node";
+    case ND_DIV:  // /
+      return "div-node";
+    case ND_EQ:  // ==
+      return "eq-node";
+    case ND_NTEQ:  // !=
+      return "nt-node";
+    case ND_GT:  // <
+      return "gt-node";
+    case ND_GTEQ:  // <=
+      return "gteq-node";
+    case ND_NUM:  // integer
+      return "num-node";
+    default:
+      return "";
+  }
 }

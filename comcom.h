@@ -82,9 +82,10 @@ Token *token;
 /* parse.c */
 Token *tokenize(char *p);
 bool consume(char *op);
-void expect(char op);
+void expect(char *op);
 int expect_number(void);
 bool at_eof(void);
+char *tk_string(TokenKind tk);
 /* node.c */
 typedef enum {
   ND_ADD,   //+
@@ -111,3 +112,4 @@ Node *new_node_num(int val);
 Node *expr(void);
 /* genx86.c */
 void gen(Node *node);
+char *nk_string(NodeKind nk);
