@@ -84,6 +84,16 @@ Token *token;
 Token *tokenize(char *p);
 void program(void);
 char *tk_string(TokenKind tk);
+typedef struct LVar LVar;
+
+// ローカル変数の型
+typedef struct LVar {
+  LVar *next;  // 次の変数かNULL
+  char *name;  // 変数の名前
+  int len;     // 名前の長さ
+  int offset;  // RBPからのオフセット
+} LVar;
+LVar *locals;
 /* node.c */
 typedef enum {
   ND_ADD,     //+

@@ -13,10 +13,3 @@ Node *new_node_num(int val) {
   node->val = val;
   return node;
 }
-
-Node *new_node_ident(int offset) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_LVAR;
-  node->offset = offset;
-  return node;
-}

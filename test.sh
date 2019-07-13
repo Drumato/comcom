@@ -40,5 +40,6 @@ try 0 '0==1;'
 try 0 '1!=1;'
 try 1 '1!=0;'
 try 6 'x = 3;x+3;'
+try 6 'foo = 3;bar = 3; foo+bar;'
 echo -e "\e[33mAll Test Passed.\e[0m"
 make clean
