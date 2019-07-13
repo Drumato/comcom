@@ -65,6 +65,7 @@ void error_at(char *loc, char *fmt, ...);
 /* token.c */
 typedef enum {
   TK_RESERVED,
+  TK_IDENT,
   TK_NUM,
   TK_EOF,
 } TokenKind;
@@ -81,35 +82,36 @@ struct Token {
 Token *token;
 /* parse.c */
 Token *tokenize(char *p);
-bool consume(char *op);
-void expect(char *op);
-int expect_number(void);
-bool at_eof(void);
+void program(void);
 char *tk_string(TokenKind tk);
 /* node.c */
 typedef enum {
-  ND_ADD,   //+
-  ND_SUB,   //-
-  ND_MUL,   //
-  ND_DIV,   // /
-  ND_EQ,    // ==
-  ND_NTEQ,  // !=
-  ND_GT,    // <
-  ND_GTEQ,  // <=
-  ND_NUM,   // integer
+  ND_ADD,     //+
+  ND_SUB,     //-
+  ND_MUL,     //
+  ND_DIV,     // /
+  ND_ASSIGN,  //=
+  ND_EQ,      // ==
+  ND_NTEQ,    // !=
+  ND_GT,      // <
+  ND_GTEQ,    // <=
+  ND_NUM,     // integer
+  ND_LVAR,    // local variables
 } NodeKind;
 
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
-  Node *lhs;
-  Node *rhs;
-  int val;
+  Node *lhs;   // left-child
+  Node *rhs;   // right-child
+  int val;     // integer-value for integer
+  int offset;  // stack-offset for local variables
 };
+char *nk_string(NodeKind nk);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+Node *new_node_ident(int offset);
 
-Node *expr(void);
+Node *code[100];
 /* genx86.c */
 void gen(Node *node);
-char *nk_string(NodeKind nk);

@@ -1,29 +1,35 @@
 #include "comcom.h"
-bool consume(char *op) {
+static bool consume(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len)))
     return false;
   token = token->next;
   return true;
 }
+static Token *consume_ident(void) {
+  if (token->kind != TK_IDENT) return NULL;
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
 
-void expect(char *op) {
+static void expect(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len)))
     error("'%c' isn't '%c'", token->str[0], op);
   token = token->next;
 }
 
-int expect_number() {
+static int expect_number() {
   if (token->kind != TK_NUM) error("not number");
   int val = token->val;
   token = token->next;
   return val;
 }
 
-bool at_eof() { return token->kind == TK_EOF; }
+static bool at_eof() { return token->kind == TK_EOF; }
 
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+static Token *new_token(TokenKind kind, Token *cur, char *str) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->str = str;
@@ -41,6 +47,11 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
+    if ('a' <= *p && *p <= 'z') {
+      cur = new_token(TK_IDENT, cur, p++);
+      cur->len = 1;
+      continue;
+    }
     if (!strncmp(p, "<=", 2) || !strncmp(p, ">=", 2) || !strncmp(p, "==", 2) ||
         !strncmp(p, "!=", 2)) {
       cur = new_token(TK_RESERVED, cur, p);
@@ -48,7 +59,7 @@ Token *tokenize(char *p) {
       p += 2;
     }
 
-    if (strchr("+-*/()<>=!", *p) != NULL) {
+    if (strchr("+-*/()<>=!;", *p) != NULL) {
       cur = new_token(TK_RESERVED, cur, p++);
       cur->len = 1;
       continue;
@@ -56,8 +67,9 @@ Token *tokenize(char *p) {
 
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p);
+      char *start = p;
       cur->val = strtol(p, &p, 10);
-      cur->len = strlen(format("%d", cur->val));
+      cur->len = p - start;
       continue;
     }
 
@@ -67,8 +79,10 @@ Token *tokenize(char *p) {
   new_token(TK_EOF, cur, p);
   return head.next;
 }
-Node *expr(void);
-Node *term(void) {
+static Node *expr(void);
+static Node *term(void) {
+  Token *tok = consume_ident();
+  if (tok) return new_node_ident((tok->str[0] - 'a' + 1) * 8);
   if (consume("(")) {
     Node *node = expr();
     expect(")");
@@ -76,12 +90,12 @@ Node *term(void) {
   }
   return new_node_num(expect_number());
 }
-Node *unary(void) {
+static Node *unary(void) {
   if (consume("+")) return term();
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), term());
   return term();
 }
-Node *mul(void) {
+static Node *mul(void) {
   Node *node = unary();
   for (;;) {
     if (consume("*"))
@@ -92,7 +106,7 @@ Node *mul(void) {
       return node;
   }
 }
-Node *add(void) {
+static Node *add(void) {
   Node *node = mul();
   for (;;) {
     if (consume("+"))
@@ -103,7 +117,7 @@ Node *add(void) {
       return node;
   }
 }
-Node *relational(void) {
+static Node *relational(void) {
   Node *node = add();
 
   for (;;) {
@@ -119,7 +133,7 @@ Node *relational(void) {
       return node;
   }
 }
-Node *equality(void) {
+static Node *equality(void) {
   Node *node = relational();
 
   for (;;) {
@@ -131,7 +145,22 @@ Node *equality(void) {
       return node;
   }
 }
-Node *expr(void) { return equality(); }
+static Node *assign(void) {
+  Node *node = equality();
+  if (consume("=")) node = new_node(ND_ASSIGN, node, assign());
+  return node;
+}
+static Node *expr(void) { return assign(); }
+static Node *stmt(void) {
+  Node *node = expr();
+  expect(";");
+  return node;
+}
+void program(void) {
+  int i = 0;
+  while (!at_eof()) code[i++] = stmt();
+  code[i] = NULL;
+}
 char *tk_string(TokenKind tk) {
   switch (tk) {
     case TK_RESERVED:
