@@ -1,9 +1,9 @@
 #!/bin/bash
+make > /dev/null
 try() {
   expected="$1"
   input="$2"
 
-  make > /dev/null
   ./comcom "$input" > tmp.s
   gcc -static -o tmp tmp.s
   ./tmp
@@ -43,5 +43,9 @@ try 6 'x = 3;x+3;'
 try 6 'foo = 3;bar = 3; foo+bar;'
 try 6 'x = 3;return x+3;'
 try 14 'a = 3;b = 5 * 6 - 8;return a + b / 2;'
+try 30 'a = 3;if(a) return 30;'
+try 50 'a = 0;if(a) return 30; else return 50;'
+try 30 'while(1) return 30;'
+try 30 'for(;;) return 30;'
 echo -e "\e[33mAll Test Passed.\e[0m"
 make clean

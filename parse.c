@@ -14,6 +14,34 @@ static bool consume_return(void) {
   token = token->next;
   return true;
 }
+static bool consume_if(void) {
+  if ((token->kind != TK_IF || strlen("if") != token->len ||
+       memcmp(token->str, "if", token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
+static bool consume_else(void) {
+  if ((token->kind != TK_ELSE || strlen("else") != token->len ||
+       memcmp(token->str, "else", token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
+static bool consume_while(void) {
+  if ((token->kind != TK_WHILE || strlen("while") != token->len ||
+       memcmp(token->str, "while", token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
+static bool consume_for(void) {
+  if ((token->kind != TK_FOR || strlen("for") != token->len ||
+       memcmp(token->str, "for", token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
 static Token *consume_ident(void) {
   if (token->kind != TK_IDENT) return NULL;
   Token *tok = token;
@@ -37,66 +65,6 @@ static int expect_number() {
 
 static bool at_eof() { return token->kind == TK_EOF; }
 
-static Token *new_token(TokenKind kind, Token *cur, char *str) {
-  Token *tok = calloc(1, sizeof(Token));
-  tok->kind = kind;
-  tok->str = str;
-  cur->next = tok;
-  return tok;
-}
-
-Token *tokenize(char *p) {
-  Token head;
-  head.next = NULL;
-  Token *cur = &head;
-
-  while (*p) {
-    if (isspace(*p)) {
-      p++;
-      continue;
-    }
-    if (!strncmp(p, "return", 6) && !isalnum(p[6])) {
-      cur = new_token(TK_RETURN, cur, p);
-      cur->len = 6;
-      p += 6;
-      continue;
-    }
-    if (isalpha(*p)) {
-      char *start = p;
-      while (isalnum(*p)) {
-        p++;
-      }
-      cur = new_token(TK_IDENT, cur, start);
-      cur->len = p - start;
-      continue;
-    }
-    if (!strncmp(p, "<=", 2) || !strncmp(p, ">=", 2) || !strncmp(p, "==", 2) ||
-        !strncmp(p, "!=", 2)) {
-      cur = new_token(TK_RESERVED, cur, p);
-      cur->len = 2;
-      p += 2;
-    }
-
-    if (strchr("+-*/()<>=!;", *p) != NULL) {
-      cur = new_token(TK_RESERVED, cur, p++);
-      cur->len = 1;
-      continue;
-    }
-
-    if (isdigit(*p)) {
-      cur = new_token(TK_NUM, cur, p);
-      char *start = p;
-      cur->val = strtol(p, &p, 10);
-      cur->len = p - start;
-      continue;
-    }
-
-    error("can't tokenize");
-  }
-
-  new_token(TK_EOF, cur, p);
-  return head.next;
-}
 static LVar *find_lvar(Token *tok) {
   for (LVar *var = locals; var; var = var->next) {
     if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
@@ -198,6 +166,38 @@ static Node *stmt(void) {
   if (consume_return()) {
     node->kind = ND_RETURN;
     node->lhs = expr();
+  } else if (consume_if()) {
+    node->kind = ND_IF;
+    expect("(");
+    node->expr = expr();
+    expect(")");
+    node->body = stmt();
+    if (consume_else()) node->alter = stmt();
+    return node;
+  } else if (consume_while()) {
+    node->kind = ND_WHILE;
+    expect("(");
+    node->expr = expr();
+    expect(")");
+    node->body = stmt();
+    return node;
+  } else if (consume_for()) {
+    node->kind = ND_FOR;
+    expect("(");
+    if (!consume(";")) {
+      node->init = expr();
+      expect(";");
+    }
+    if (!consume(";")) {
+      node->expr = expr();
+      expect(";");
+    }
+    if (!consume(")")) {
+      node->inc = expr();
+      expect(")");
+    }
+    node->body = stmt();
+    return node;
   } else {
     node = expr();
   }
@@ -245,6 +245,8 @@ char *nk_string(NodeKind nk) {
       return "num-node";
     case ND_RETURN:  // integer
       return "return-stmt";
+    case ND_IF:  // integer
+      return "if-stmt";
     default:
       return "";
   }

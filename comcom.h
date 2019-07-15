@@ -68,6 +68,10 @@ typedef enum {
   TK_IDENT,
   TK_NUM,
   TK_RETURN,
+  TK_IF,
+  TK_ELSE,
+  TK_WHILE,
+  TK_FOR,
   TK_EOF,
 } TokenKind;
 
@@ -102,6 +106,9 @@ typedef enum {
   ND_MUL,     //
   ND_DIV,     // /
   ND_ASSIGN,  //=
+  ND_IF,      // if-stmt
+  ND_WHILE,   // while-stmt
+  ND_FOR,     // for-stmt
   ND_RETURN,  // return-stmt
   ND_EQ,      // ==
   ND_NTEQ,    // !=
@@ -114,10 +121,15 @@ typedef enum {
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
-  Node *lhs;   // left-child
-  Node *rhs;   // right-child
-  int val;     // integer-value for integer
-  int offset;  // stack-offset for local variables
+  Node *expr;   // expression and condition
+  Node *body;   // body with if-stmt
+  Node *alter;  // body with else-stmt
+  Node *lhs;    // left-child
+  Node *rhs;    // right-child
+  Node *init;   // for(init)
+  Node *inc;    // for(incdec)
+  int val;      // integer-value for integer
+  int offset;   // stack-offset for local variables
 };
 char *nk_string(NodeKind nk);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);

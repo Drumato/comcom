@@ -1,5 +1,6 @@
 #include "comcom.h"
 
+int label = 1;
 static void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) error("expected identifier before assign-mark");
   printf("  mov rax, rbp\n");
@@ -8,6 +9,45 @@ static void gen_lval(Node *node) {
 }
 void gen(Node *node) {
   switch (node->kind) {
+    case ND_IF:
+      gen(node->expr);  // condition
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      if (node->alter) {
+        printf("  je .Lelse%d\n", label);
+        gen(node->body);
+        printf("  jmp .Lend%d\n", label);
+        printf(".Lelse%d:\n", label);
+        gen(node->alter);
+        printf(".Lend%d:\n", label++);
+      } else {
+        printf("  je .Lend%d\n", label);
+        gen(node->body);
+        printf(".Lend%d:\n", label++);
+      }
+      return;
+    case ND_WHILE:
+      printf(".Lbegin%d:\n", label);
+      gen(node->expr);  // condition
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .Lend%d\n", label);
+      gen(node->body);
+      printf("  jmp .Lbegin%d\n", label);
+      printf(".Lend%d:\n", label++);
+      return;
+    case ND_FOR:
+      if (node->init) gen(node->init);  // initialization
+      printf(".Lbegin%d:\n", label);
+      if (node->expr) gen(node->expr);  // condition
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .Lend%d\n", label);
+      gen(node->body);
+      if (node->inc) gen(node->inc);  // increment/decrement
+      printf("  jmp .Lbegin%d\n", label);
+      printf(".Lend%d:\n", label++);
+      return;
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n");
