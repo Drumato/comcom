@@ -42,6 +42,13 @@ static bool consume_for(void) {
   token = token->next;
   return true;
 }
+static bool consume_block(void) {
+  if ((token->kind != TK_RESERVED || strlen("{") != token->len ||
+       memcmp(token->str, "{", token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
 static Token *consume_ident(void) {
   if (token->kind != TK_IDENT) return NULL;
   Token *tok = token;
@@ -197,6 +204,11 @@ static Node *stmt(void) {
       expect(")");
     }
     node->body = stmt();
+    return node;
+  } else if (consume_block()) {
+    node->kind = ND_BLOCK;
+    node->stmts = new_ary();
+    while (!consume("}")) ary_push(node->stmts, (void *)stmt());
     return node;
   } else {
     node = expr();

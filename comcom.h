@@ -116,20 +116,22 @@ typedef enum {
   ND_GTEQ,    // <=
   ND_NUM,     // integer
   ND_LVAR,    // local variables
+  ND_BLOCK,   // { stmt* }
 } NodeKind;
 
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
-  Node *expr;   // expression and condition
-  Node *body;   // body with if-stmt
-  Node *alter;  // body with else-stmt
-  Node *lhs;    // left-child
-  Node *rhs;    // right-child
-  Node *init;   // for(init)
-  Node *inc;    // for(incdec)
-  int val;      // integer-value for integer
-  int offset;   // stack-offset for local variables
+  Node *expr;    // expression and condition
+  Node *body;    // body with if-stmt
+  Node *alter;   // body with else-stmt
+  Array *stmts;  // statements in ND_BLOCK
+  Node *lhs;     // left-child
+  Node *rhs;     // right-child
+  Node *init;    // for(init)
+  Node *inc;     // for(incdec)
+  int val;       // integer-value for integer
+  int offset;    // stack-offset for local variables
 };
 char *nk_string(NodeKind nk);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
