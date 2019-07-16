@@ -1,5 +1,6 @@
 #include "comcom.h"
 
+char *caller_regs[] = {"rsi", "rdi", "rdx", "rcx", "r8", "r9", NULL};
 int label = 1;
 static void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) error("expected identifier before assign-mark");
@@ -37,6 +38,13 @@ void gen(Node *node) {
       printf(".Lend%d:\n", label++);
       return;
     case ND_CALL:
+      for (int i = 0; i < node->args->length; i++)
+        gen((Node *)node->args->data[i]);
+      for (int i = 0; i < node->args->length; i++) {
+        char *reg = caller_regs[i];
+        if (reg == NULL) error("exhausted register");
+        printf("  pop %s\n", reg);
+      }
       printf("  call foo\n");
       return;
     case ND_FOR:

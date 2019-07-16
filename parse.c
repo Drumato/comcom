@@ -86,7 +86,14 @@ static Node *term(void) {
     Node *node = calloc(1, sizeof(Node));
     if (consume("(")) {
       node->kind = ND_CALL;
-      expect(")");
+      node->args = new_ary();
+      for (;;) {
+        ary_push(node->args, (void *)term());
+        if (!consume(",")) {
+          expect(")");
+          break;
+        }
+      }
       return node;
     } else {
       node->kind = ND_LVAR;

@@ -127,6 +127,7 @@ struct Node {
   Node *body;    // body with if-stmt
   Node *alter;   // body with else-stmt
   Array *stmts;  // statements in ND_BLOCK
+  Array *args;   // arguments in ND_CALL
   Node *lhs;     // left-child
   Node *rhs;     // right-child
   Node *init;    // for(init)
