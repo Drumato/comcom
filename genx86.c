@@ -36,6 +36,9 @@ void gen(Node *node) {
       printf("  jmp .Lbegin%d\n", label);
       printf(".Lend%d:\n", label++);
       return;
+    case ND_CALL:
+      printf("  call foo\n");
+      return;
     case ND_FOR:
       if (node->init) gen(node->init);  // initialization
       printf(".Lbegin%d:\n", label);

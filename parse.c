@@ -84,21 +84,27 @@ static Node *term(void) {
   Token *tok = consume_ident();
   if (tok) {
     Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
-
-    LVar *lvar = find_lvar(tok);
-    if (lvar) {
-      node->offset = lvar->offset;
+    if (consume("(")) {
+      node->kind = ND_CALL;
+      expect(")");
+      return node;
     } else {
-      lvar = calloc(1, sizeof(LVar));
-      if (locals) lvar->next = locals;
-      lvar->name = tok->str;
-      lvar->len = tok->len;
-      if (locals) lvar->offset = locals->offset + 8;
-      node->offset = lvar->offset;
-      locals = lvar;
+      node->kind = ND_LVAR;
+
+      LVar *lvar = find_lvar(tok);
+      if (lvar) {
+        node->offset = lvar->offset;
+      } else {
+        lvar = calloc(1, sizeof(LVar));
+        if (locals) lvar->next = locals;
+        lvar->name = tok->str;
+        lvar->len = tok->len;
+        if (locals) lvar->offset = locals->offset + 8;
+        node->offset = lvar->offset;
+        locals = lvar;
+      }
+      return node;
     }
-    return node;
   }
   if (consume("(")) {
     Node *node = expr();

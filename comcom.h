@@ -106,6 +106,7 @@ typedef enum {
   ND_MUL,     //
   ND_DIV,     // /
   ND_ASSIGN,  //=
+  ND_CALL,    // call-expression
   ND_IF,      // if-stmt
   ND_WHILE,   // while-stmt
   ND_FOR,     // for-stmt
