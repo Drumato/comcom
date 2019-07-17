@@ -111,6 +111,7 @@ typedef enum {
   ND_WHILE,   // while-stmt
   ND_FOR,     // for-stmt
   ND_RETURN,  // return-stmt
+  ND_FUNC,    // function
   ND_EQ,      // ==
   ND_NTEQ,    // !=
   ND_GT,      // <
@@ -132,6 +133,7 @@ struct Node {
   Node *rhs;     // right-child
   Node *init;    // for(init)
   Node *inc;     // for(incdec)
+  char *name;    // function names
   int val;       // integer-value for integer
   int offset;    // stack-offset for local variables
 };

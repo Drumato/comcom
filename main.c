@@ -10,16 +10,9 @@ int main(int argc, char **argv) {
 
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
-  printf("main:\n");
-
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
 
   for (int i = 0; code[i]; i++) {
     gen(code[i]);
-
-    printf("  pop rax\n");
   }
 
   printf("  mov rsp, rbp\n");

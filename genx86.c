@@ -45,7 +45,7 @@ void gen(Node *node) {
         if (reg == NULL) error("exhausted register");
         printf("  pop %s\n", reg);
       }
-      printf("  call foo\n");
+      printf("  call %s\n", node->name);
       return;
     case ND_FOR:
       if (node->init) gen(node->init);  // initialization
@@ -86,8 +86,19 @@ void gen(Node *node) {
     case ND_BLOCK:
       for (int i = 0; i < node->stmts->length; i++) {
         gen((Node *)node->stmts->data[i]);
-        // printf("  pop rax\n");
       }
+      return;
+    case ND_FUNC:
+      printf("%s:\n", node->name);
+      printf("  push rbp\n");
+      printf("  mov rbp, rsp\n");
+      printf("  sub rsp, 208\n");
+      for (int i = 0; i < node->args->length; i++) {
+        char *reg = caller_regs[i];
+        if (reg == NULL) error("exhausted register");
+        printf("  push %s\n", reg);
+      }
+      gen(node->body);
       return;
     default:
       break;

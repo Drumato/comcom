@@ -55,6 +55,12 @@ static Token *consume_ident(void) {
   token = token->next;
   return tok;
 }
+static bool next_lparen(void) {
+  if (token->next->kind != TK_RESERVED ||
+      strncmp(token->next->str, "(", 1) != 0)
+    return false;
+  return true;
+}
 
 static void expect(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
@@ -88,12 +94,15 @@ static Node *term(void) {
       node->kind = ND_CALL;
       node->args = new_ary();
       for (;;) {
-        ary_push(node->args, (void *)term());
         if (!consume(",")) {
           expect(")");
           break;
+          ary_push(node->args, (void *)term());
         }
       }
+      node->name = (char *)malloc(tok->len * sizeof(char));
+      strncpy(node->name, tok->str, tok->len);
+      node->name[tok->len] = '\0';
       return node;
     } else {
       node->kind = ND_LVAR;
@@ -183,10 +192,10 @@ static Node *assign(void) {
 static Node *expr(void) { return assign(); }
 static Node *stmt(void) {
   Node *node = calloc(1, sizeof(Node));
-  if (consume_return()) {
+  if (consume_return()) {  // return-stmt
     node->kind = ND_RETURN;
     node->lhs = expr();
-  } else if (consume_if()) {
+  } else if (consume_if()) {  // if-stmt
     node->kind = ND_IF;
     expect("(");
     node->expr = expr();
@@ -194,14 +203,14 @@ static Node *stmt(void) {
     node->body = stmt();
     if (consume_else()) node->alter = stmt();
     return node;
-  } else if (consume_while()) {
+  } else if (consume_while()) {  // while-stmt
     node->kind = ND_WHILE;
     expect("(");
     node->expr = expr();
     expect(")");
     node->body = stmt();
     return node;
-  } else if (consume_for()) {
+  } else if (consume_for()) {  // for-stmt
     node->kind = ND_FOR;
     expect("(");
     if (!consume(";")) {
@@ -218,7 +227,7 @@ static Node *stmt(void) {
     }
     node->body = stmt();
     return node;
-  } else if (consume_block()) {
+  } else if (consume_block()) {  // block-stmt
     node->kind = ND_BLOCK;
     node->stmts = new_ary();
     while (!consume("}")) ary_push(node->stmts, (void *)stmt());
@@ -229,9 +238,34 @@ static Node *stmt(void) {
   if (!consume(";")) error("'%s' is not ';'", token->str);
   return node;
 }
+static Node *func(void) {
+  Node *node = calloc(1, sizeof(Node));
+  Token *tok;
+  if (!next_lparen() || !(tok = consume_ident())) {
+    error("function must be started with func_name: got '%s'", token->str);
+  }
+  node->name = (char *)malloc(tok->len * sizeof(char));
+  strncpy(node->name, tok->str, tok->len);
+  node->name[tok->len] = '\0';
+  node->kind = ND_FUNC;
+  expect("(");
+  node->args = new_ary();
+  if (!consume(")")) {
+    for (;;) {
+      ary_push(node->args, (void *)consume_ident());
+      if (!consume(",")) {
+        expect(")");
+        break;
+      }
+      ary_push(node->args, (void *)consume_ident());
+    }
+  }
+  node->body = stmt();
+  return node;
+}
 void program(void) {
   int i = 0;
-  while (!at_eof()) code[i++] = stmt();
+  while (!at_eof()) code[i++] = func();
   code[i] = NULL;
 }
 char *tk_string(TokenKind tk) {
