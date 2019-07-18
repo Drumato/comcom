@@ -1,4 +1,3 @@
-
 #include "comcom.h"
 
 static bool consume(char *op) {
@@ -256,12 +255,12 @@ static Node *func(void) {
   node->args = new_ary();
   if (!consume(")")) {
     for (;;) {
-      ary_push(node->args, (void *)consume_ident());
+      ary_push(node->args, (void *)term());
       if (!consume(",")) {
         expect(")");
         break;
       }
-      ary_push(node->args, (void *)consume_ident());
+      ary_push(node->args, (void *)term());
     }
   }
   node->body = stmt();

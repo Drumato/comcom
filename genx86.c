@@ -2,10 +2,13 @@
 
 char *caller_regs[] = {"rsi", "rdi", "rdx", "rcx", "r8", "r9", NULL};
 int label = 1;
-static void gen_lval(Node *node) {
+static void gen_lval(Node *node, int offset) {
   if (node->kind != ND_LVAR) error("expected identifier before assign-mark");
   printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", node->offset);
+  if (offset)
+    printf("  sub rax, %d\n", node->offset + offset);
+  else
+    printf("  sub rax, %d\n", node->offset);
   printf("  push rax\n");
 }
 void gen(Node *node) {
@@ -71,13 +74,13 @@ void gen(Node *node) {
       printf("  push %d\n", node->val);
       return;
     case ND_LVAR:
-      gen_lval(node);
+      gen_lval(node, 0);
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
       printf("  push rax\n");
       return;
     case ND_ASSIGN:
-      gen_lval(node->lhs);
+      gen_lval(node->lhs, 0);
       gen(node->rhs);
       printf("  pop rdi\n");
       printf("  pop rax\n");
@@ -93,7 +96,7 @@ void gen(Node *node) {
       printf("%s:\n", node->name);
       printf("  push rbp\n");
       printf("  mov rbp, rsp\n");
-      printf("  sub rsp, 208\n");
+      if (!strncmp(node->name, "main", 4)) printf("  sub rsp, 208\n");
       for (int i = 0; i < node->args->length; i++) {
         char *reg = caller_regs[i];
         if (reg == NULL) error("exhausted register");
