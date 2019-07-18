@@ -12,7 +12,7 @@ test:
 $(OBJS): comcom.h
 
 clean:
-	rm -f comcom *.o *~ tmp* a.out test/*~ *.s
+	rm -f core comcom *.o *.txt *~ tmp* a.out test/*~ *.s
 
 format:
 	clang-format -i *.c *.h

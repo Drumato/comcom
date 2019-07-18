@@ -46,6 +46,7 @@ void gen(Node *node) {
         printf("  pop %s\n", reg);
       }
       printf("  call %s\n", node->name);
+      printf("  push rax\n");
       return;
     case ND_FOR:
       if (node->init) gen(node->init);  // initialization
