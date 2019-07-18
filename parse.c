@@ -1,3 +1,4 @@
+
 #include "comcom.h"
 
 static bool consume(char *op) {
@@ -93,11 +94,14 @@ static Node *term(void) {
     if (consume("(")) {
       node->kind = ND_CALL;
       node->args = new_ary();
-      for (;;) {
-        if (!consume(",")) {
-          expect(")");
-          break;
-          ary_push(node->args, (void *)term());
+      if (!consume(")")) {
+        ary_push(node->args, (void *)term());
+        for (;;) {
+          if (!consume(",")) {
+            expect(")");
+            break;
+            ary_push(node->args, (void *)term());
+          }
         }
       }
       node->name = (char *)malloc(tok->len * sizeof(char));
