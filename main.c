@@ -5,7 +5,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  token = tokenize(argv[1]);
+  char *content;
+  if (fopen(argv[1], "r") == NULL)
+    content = argv[1];
+  else
+    content = get_contents(argv[1]);
+
+  token = tokenize(content);
   program();
 
   printf(".intel_syntax noprefix\n");

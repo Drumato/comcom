@@ -104,13 +104,13 @@ static Node *term(void) {
       node->kind = ND_CALL;
       node->args = new_ary();
       if (!consume(")")) {
-        ary_push(node->args, (void *)term());
+        ary_push(node->args, (void *)expr());
         for (;;) {
           if (consume(")")) {
             break;
           }
           expect(",");
-          ary_push(node->args, (void *)term());
+          ary_push(node->args, (void *)expr());
         }
       }
       node->name = (char *)malloc(tok->len * sizeof(char));
