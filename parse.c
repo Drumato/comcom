@@ -142,6 +142,8 @@ static Node *term(void) {
 static Node *unary(void) {
   if (consume("+")) return term();
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), term());
+  if (consume("*")) return new_node(ND_DEREF, unary(), new_node_num(0));
+  if (consume("&")) return new_node(ND_ADDR, unary(), new_node_num(0));
   return term();
 }
 static Node *mul(void) {

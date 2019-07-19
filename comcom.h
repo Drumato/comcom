@@ -119,6 +119,8 @@ typedef enum {
   ND_NUM,     // integer
   ND_LVAR,    // local variables
   ND_BLOCK,   // { stmt* }
+  ND_ADDR,    // &x
+  ND_DEREF,   // *x
 } NodeKind;
 
 typedef struct Node Node;
