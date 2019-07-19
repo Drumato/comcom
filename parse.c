@@ -65,7 +65,7 @@ static bool next_lparen(void) {
 static void expect(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len)))
-    error("'%c' isn't '%c'", token->str[0], op);
+    error("'%s' isn't '%s'", token->str, op);
   token = token->next;
 }
 
@@ -85,6 +85,16 @@ static LVar *find_lvar(Token *tok) {
   }
   return NULL;
 }
+static void set_lvar(Node *node, char *name, int length) {
+  node->kind = ND_LVAR;
+  LVar *lvar = calloc(1, sizeof(LVar));
+  if (locals) lvar->next = locals;
+  lvar->name = name;
+  lvar->len = length;
+  if (locals) lvar->offset = locals->offset + 8;
+  node->offset = lvar->offset;
+  locals = lvar;
+}
 static Node *expr(void);
 static Node *term(void) {
   Token *tok = consume_ident();
@@ -96,11 +106,11 @@ static Node *term(void) {
       if (!consume(")")) {
         ary_push(node->args, (void *)term());
         for (;;) {
-          if (!consume(",")) {
-            expect(")");
+          if (consume(")")) {
             break;
-            ary_push(node->args, (void *)term());
           }
+          expect(",");
+          ary_push(node->args, (void *)term());
         }
       }
       node->name = (char *)malloc(tok->len * sizeof(char));
@@ -114,14 +124,11 @@ static Node *term(void) {
       if (lvar) {
         node->offset = lvar->offset;
       } else {
-        lvar = calloc(1, sizeof(LVar));
-        if (locals) lvar->next = locals;
-        lvar->name = tok->str;
-        lvar->len = tok->len;
-        if (locals) lvar->offset = locals->offset + 8;
-        node->offset = lvar->offset;
-        locals = lvar;
+        set_lvar(node, tok->str, tok->len);
       }
+      node->name = (char *)malloc(tok->len * sizeof(char));
+      strncpy(node->name, tok->str, tok->len);
+      node->name[tok->len] = '\0';
       return node;
     }
   }
@@ -253,14 +260,19 @@ static Node *func(void) {
   node->kind = ND_FUNC;
   expect("(");
   node->args = new_ary();
+  Node *arg;
   if (!consume(")")) {
+    arg = term();
+    set_lvar(arg, arg->name, strlen(arg->name));
+    ary_push(node->args, (void *)arg);
     for (;;) {
-      ary_push(node->args, (void *)term());
-      if (!consume(",")) {
-        expect(")");
+      if (consume(")")) {
         break;
       }
-      ary_push(node->args, (void *)term());
+      expect(",");
+      arg = term();
+      set_lvar(arg, node->name, strlen(node->name));
+      ary_push(node->args, (void *)arg);
     }
   }
   node->body = stmt();

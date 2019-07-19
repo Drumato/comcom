@@ -2,20 +2,23 @@
 
 char *caller_regs[] = {"rsi", "rdi", "rdx", "rcx", "r8", "r9", NULL};
 int label = 1;
-static void gen_lval(Node *node, int offset) {
+static void push_reg(char *reg) { printf("  push %s\n", reg); }
+static void push_const(int val) { printf("  push %d\n", val); }
+static void pop_reg(char *reg) { printf("  pop %s\n", reg); }
+static void mov_reg_to_reg(char *dst, char *src) {
+  printf("  mov %s, %s\n", dst, src);
+}
+static void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) error("expected identifier before assign-mark");
-  printf("  mov rax, rbp\n");
-  if (offset)
-    printf("  sub rax, %d\n", node->offset + offset);
-  else
-    printf("  sub rax, %d\n", node->offset);
-  printf("  push rax\n");
+  mov_reg_to_reg("rax", "rbp");
+  printf("  sub rax, %d\n", node->offset);
+  push_reg("rax");
 }
 void gen(Node *node) {
   switch (node->kind) {
     case ND_IF:
       gen(node->expr);  // condition
-      printf("  pop rax\n");
+      pop_reg("rax");
       printf("  cmp rax, 0\n");
       if (node->alter) {
         printf("  je .Lelse%d\n", label);
@@ -33,7 +36,7 @@ void gen(Node *node) {
     case ND_WHILE:
       printf(".Lbegin%d:\n", label);
       gen(node->expr);  // condition
-      printf("  pop rax\n");
+      pop_reg("rax");
       printf("  cmp rax, 0\n");
       printf("  je .Lend%d\n", label);
       gen(node->body);
@@ -46,16 +49,16 @@ void gen(Node *node) {
       for (int i = 0; i < node->args->length; i++) {
         char *reg = caller_regs[i];
         if (reg == NULL) error("exhausted register");
-        printf("  pop %s\n", reg);
+        pop_reg(reg);
       }
       printf("  call %s\n", node->name);
-      printf("  push rax\n");
+      push_reg("rax");
       return;
     case ND_FOR:
       if (node->init) gen(node->init);  // initialization
       printf(".Lbegin%d:\n", label);
       if (node->expr) gen(node->expr);  // condition
-      printf("  pop rax\n");
+      pop_reg("rax");
       printf("  cmp rax, 0\n");
       printf("  je .Lend%d\n", label);
       gen(node->body);
@@ -65,27 +68,27 @@ void gen(Node *node) {
       return;
     case ND_RETURN:
       gen(node->lhs);
-      printf("  pop rax\n");
-      printf("  mov rsp,rbp\n");
+      pop_reg("rax");
+      mov_reg_to_reg("rsp", "rbp");
       printf("  pop rbp\n");
       printf("  ret\n");
       return;
     case ND_NUM:
-      printf("  push %d\n", node->val);
+      push_const(node->val);
       return;
     case ND_LVAR:
-      gen_lval(node, 0);
-      printf("  pop rax\n");
+      gen_lval(node);
+      pop_reg("rax");
       printf("  mov rax, [rax]\n");
-      printf("  push rax\n");
+      push_reg("rax");
       return;
     case ND_ASSIGN:
-      gen_lval(node->lhs, 0);
+      gen_lval(node->lhs);
       gen(node->rhs);
-      printf("  pop rdi\n");
-      printf("  pop rax\n");
+      pop_reg("rdi");
+      pop_reg("rax");
       printf("  mov [rax],rdi\n");
-      printf("  push rdi\n");
+      push_reg("rdi");
       return;
     case ND_BLOCK:
       for (int i = 0; i < node->stmts->length; i++) {
@@ -94,8 +97,8 @@ void gen(Node *node) {
       return;
     case ND_FUNC:
       printf("%s:\n", node->name);
-      printf("  push rbp\n");
-      printf("  mov rbp, rsp\n");
+      push_reg("rbp");
+      mov_reg_to_reg("rbp", "rsp");
       if (!strncmp(node->name, "main", 4)) printf("  sub rsp, 208\n");
       for (int i = 0; i < node->args->length; i++) {
         char *reg = caller_regs[i];
@@ -109,8 +112,8 @@ void gen(Node *node) {
   }
   gen(node->lhs);
   gen(node->rhs);
-  printf("  pop rdi\n");
-  printf("  pop rax\n");
+  pop_reg("rdi");
+  pop_reg("rax");
   switch (node->kind) {
     case ND_ADD:
       printf("  add rax, rdi\n");
@@ -148,5 +151,5 @@ void gen(Node *node) {
     default:
       break;
   }
-  printf("  push rax\n");
+  push_reg("rax");
 }

@@ -51,6 +51,6 @@ try 55 'main(){sum = 0;for(i = 1;i < 11;i = i + 1) sum = sum + i; return sum;}'
 try 55 'main(){sum = 0;for(i = 1; i < 11;) {sum = sum + i;i = i+1;} return sum;}'
 try 10 'foo(){return 10;} main(){ return foo();}'
 try 33 'add(x){return x+3;} main(){ return add(30);}'
-try 33 'add(x,y){return x+y;} main(){ return add(30,40);}'
+try 70 'add(x,y){return x+y;} main(){ return add(30,40);}'
 echo -e "\e[33mAll Test Passed.\e[0m"
 make clean
