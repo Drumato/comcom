@@ -68,6 +68,7 @@ typedef enum {
   TK_IDENT,
   TK_NUM,
   TK_RETURN,
+  TK_INT,
   TK_IF,
   TK_ELSE,
   TK_WHILE,
@@ -105,7 +106,8 @@ typedef enum {
   ND_SUB,     //-
   ND_MUL,     //
   ND_DIV,     // /
-  ND_ASSIGN,  //=
+  ND_ASSIGN,  // =
+  ND_DEC,     // int x;
   ND_CALL,    // call-expression
   ND_IF,      // if-stmt
   ND_WHILE,   // while-stmt
