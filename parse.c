@@ -28,12 +28,13 @@ static bool consume_else(void) {
   token = token->next;
   return true;
 }
-static bool consume_type(void) {
+static Token *consume_type(void) {
   if ((token->kind != TK_INT || strlen("int") != token->len ||
        memcmp(token->str, "int", token->len)))
-    return false;
+    return NULL;
+  Token *tok = token;
   token = token->next;
-  return true;
+  return tok;
 }
 static bool consume_while(void) {
   if ((token->kind != TK_WHILE || strlen("while") != token->len ||
@@ -139,7 +140,7 @@ static Node *term(void) {
       return node;
     }
   }
-  if (consume_type()) {
+  if (consume_type() != NULL) {
     tok = consume_ident();
     Node *node = (Node *)calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
@@ -221,22 +222,23 @@ static Node *assign(void) {
 static Node *expr(void) { return assign(); }
 static Node *stmt(void) {
   Node *node = calloc(1, sizeof(Node));
+  Token *type;
   if (consume_return()) {  // return-stmt
     node->kind = ND_RETURN;
     node->lhs = expr();
-  } else if (consume_type()) {
+  } else if ((type = consume_type()) != NULL) {
     Token *tok = consume_ident();
     LVar *lvar = find_lvar(tok);
     if (lvar) {
       error("already declared: '%s'", lvar->name);
     }
     Node *ident = (Node *)calloc(1, sizeof(Node));
+    ident->kind = ND_LVAR;
     ident->name = malloc(tok->len * sizeof(char));
     strncpy(ident->name, tok->str, tok->len);
     ident->name[tok->len] = '\0';
     set_lvar(ident, tok->str, tok->len);
-    // expect(";");
-    node = new_node(ND_DEC, ident, new_node_num(0));
+    node = new_node(ND_DEC, new_node_type(type), ident);
   } else if (consume_if()) {  // if-stmt
     node->kind = ND_IF;
     expect("(");
@@ -283,7 +285,7 @@ static Node *stmt(void) {
 static Node *func(void) {
   Node *node = calloc(1, sizeof(Node));
   Token *tok;
-  if (!consume_type()) {
+  if (consume_type() == NULL) {
     error("function must be started with type_name: got '%s'", token->str);
   }
   if (!next_lparen() || !(tok = consume_ident())) {

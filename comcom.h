@@ -100,6 +100,7 @@ typedef struct LVar {
   int offset;  // RBPからのオフセット
 } LVar;
 LVar *locals;
+
 /* node.c */
 typedef enum {
   ND_ADD,     //+
@@ -125,6 +126,21 @@ typedef enum {
   ND_DEREF,   // *x
 } NodeKind;
 
+typedef enum {
+  T_INT,
+  T_ADDR,
+} TypeKind;
+
+typedef struct Type Type;
+typedef struct Type {
+  TypeKind kind;
+  int offset;
+  Type *pointer_of;
+} Type;
+
+Type *new_type(TypeKind kind, Type *pointer_of);
+char *type_string(Type *type);
+
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
@@ -137,6 +153,7 @@ struct Node {
   Node *rhs;     // right-child
   Node *init;    // for(init)
   Node *inc;     // for(incdec)
+  Type *type;    // indicates node_type
   char *name;    // function names
   int val;       // integer-value for integer
   int offset;    // stack-offset for local variables
@@ -145,7 +162,13 @@ char *nk_string(NodeKind nk);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(int offset);
+Node *new_node_type(Token *tok);
 
 Node *code[100];
+
+/* sema.c */
+
+void semantic(void);
+
 /* genx86.c */
 void gen(Node *node);

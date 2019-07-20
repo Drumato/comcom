@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
 
   token = tokenize(content);
   program();
+  semantic();
 
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");

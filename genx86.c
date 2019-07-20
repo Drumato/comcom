@@ -116,6 +116,8 @@ void gen(Node *node) {
       printf("  mov rax, [rax]\n");
       push_reg("rax");
       return;
+    case ND_DEC:
+      return;
     default:
       break;
   }
