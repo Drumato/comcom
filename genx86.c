@@ -17,8 +17,7 @@ static void gen_lval(Node *node) {
   printf("  sub rax, %d\n", node->offset);
   push_reg("rax");
   if (node->type->kind == T_ADDR) {
-    printf("  mov rdi, [rax]\n");
-    lea_reg_to_reg("rax", "rdi");
+    lea_reg_to_reg("rax", "rsp");
     push_reg("rax");
     return;
   }

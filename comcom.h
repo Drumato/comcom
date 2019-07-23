@@ -168,6 +168,7 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(int offset);
 Node *new_node_type(Token *tok);
+Type *inference_type(Token *tok);
 
 Node *code[100];
 

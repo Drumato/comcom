@@ -307,15 +307,32 @@ static Node *func(void) {
   node->args = new_ary();
   Node *arg;
   if (!consume(")")) {
-    arg = term();
-    set_lvar(arg, arg->name, strlen(arg->name));
+    Token *type = consume_type();
+    while (consume("*")) type = ptr_to(type);
+    Token *tok = consume_ident();
+    arg = (Node *)calloc(1, sizeof(Node));
+    arg->kind = ND_LVAR;
+    arg->name = (char *)malloc(tok->len * sizeof(char));
+    strncpy(arg->name, tok->str, tok->len);
+    arg->name[tok->len] = '\0';
+    set_lvar(arg, tok->str, tok->len);
+    arg->type = inference_type(type);
     ary_push(node->args, (void *)arg);
     for (;;) {
       if (consume(")")) {
         break;
       }
       expect(",");
-      arg = term();
+      Token *type = consume_type();
+      while (consume("*")) type = ptr_to(type);
+      Token *tok = consume_ident();
+      arg = (Node *)calloc(1, sizeof(Node));
+      arg->kind = ND_LVAR;
+      arg->name = (char *)malloc(tok->len * sizeof(char));
+      strncpy(arg->name, tok->str, tok->len);
+      arg->name[tok->len] = '\0';
+      set_lvar(arg, tok->str, tok->len);
+      arg->type = inference_type(type);
       set_lvar(arg, node->name, strlen(node->name));
       ary_push(node->args, (void *)arg);
     }

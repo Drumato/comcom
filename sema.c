@@ -19,7 +19,6 @@ static Type *walk(Node *node) {
         LVar *lvar = find_lvar(((Node *)node->args->data[i])->name,
                                strlen(((Node *)node->args->data[i])->name));
         lvar->type = type;
-        fprintf(stderr, "name->%s type->%s", lvar->name, type_string(type));
         ((Node *)node->args->data[i])->type = type;
         walk(((Node *)node->args->data[i]));
       }

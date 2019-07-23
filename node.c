@@ -52,6 +52,18 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
   return type;
 }
 
+Type *inference_type(Token *tok) {
+  Type *type = new_type(T_INT, NULL);
+  if ((tok->kind != TK_INT || strlen("int") != tok->len ||
+       memcmp(tok->str, "int", tok->len))) {
+    while (tok->ptr_to != NULL) {
+      type = new_type(T_ADDR, type);
+      tok = tok->ptr_to;
+    }
+  }
+  return type;
+}
+
 char *type_string(Type *type) {
   if (type == NULL) {
     return "";
