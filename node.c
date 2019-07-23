@@ -16,13 +16,19 @@ Node *new_node_num(int val) {
 
 Node *new_node_type(Token *tok) {
   Node *node = calloc(1, sizeof(Node));
-  node->name = malloc(tok->len * sizeof(char));
-  strncpy(node->name, tok->str, tok->len);
-  node->name[tok->len] = '\0';
+  Type *type = NULL;
+  if (!strncmp("int", tok->str, 3)) {
+    type = new_type(T_INT, NULL);
+  }
+  while (tok->ptr_to != NULL) {
+    type = new_type(T_ADDR, type);
+    tok = tok->ptr_to;
+  }
+  node->type = type;
   return node;
 }
 
-Type *new_type(TypeKind kind, Type *pointer_of) {
+Type *new_type(TypeKind kind, Type *ptr_to) {
   int offset;
   switch (kind) {
     case T_INT: {
@@ -40,8 +46,8 @@ Type *new_type(TypeKind kind, Type *pointer_of) {
   Type *type = (Type *)calloc(1, sizeof(Type));
   type->kind = kind;
   type->offset = offset;
-  if (pointer_of != NULL) {
-    type->pointer_of = pointer_of;
+  if (ptr_to != NULL) {
+    type->ptr_to = ptr_to;
   }
   return type;
 }
@@ -54,6 +60,8 @@ char *type_string(Type *type) {
     case T_INT:
       return "Integer";
     case T_ADDR:
-      return format("address_of -> %s", type_string(type->pointer_of));
+      return format("address_of -> %s", type_string(type->ptr_to));
+    default:
+      return "";
   }
 }

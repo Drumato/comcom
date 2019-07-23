@@ -1,5 +1,4 @@
 #include "comcom.h"
-
 static bool consume(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len)))
@@ -27,6 +26,15 @@ static bool consume_else(void) {
     return false;
   token = token->next;
   return true;
+}
+static Token *ptr_to(Token *tok) {
+  Token *token = (Token *)calloc(1, sizeof(Token));
+  token->str = malloc(tok->len * sizeof(char));
+  strncpy(token->str, tok->str, tok->len);
+  token->str[tok->len] = '\0';
+  token->kind = TK_ADDR;
+  token->ptr_to = tok;
+  return token;
 }
 static Token *consume_type(void) {
   if ((token->kind != TK_INT || strlen("int") != token->len ||
@@ -86,10 +94,9 @@ static int expect_number() {
 
 static bool at_eof() { return token->kind == TK_EOF; }
 
-static LVar *find_lvar(Token *tok) {
+LVar *find_lvar(char *str, int len) {
   for (LVar *var = locals; var; var = var->next) {
-    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
-      return var;
+    if (var->len == len && !memcmp(str, var->name, var->len)) return var;
   }
   return NULL;
 }
@@ -128,7 +135,7 @@ static Node *term(void) {
     } else {
       node->kind = ND_LVAR;
 
-      LVar *lvar = find_lvar(tok);
+      LVar *lvar = find_lvar(tok->str, tok->len);
       if (lvar) {
         node->offset = lvar->offset;
       } else {
@@ -227,8 +234,9 @@ static Node *stmt(void) {
     node->kind = ND_RETURN;
     node->lhs = expr();
   } else if ((type = consume_type()) != NULL) {
+    while (consume("*")) type = ptr_to(type);
     Token *tok = consume_ident();
-    LVar *lvar = find_lvar(tok);
+    LVar *lvar = find_lvar(tok->str, tok->len);
     if (lvar) {
       error("already declared: '%s'", lvar->name);
     }

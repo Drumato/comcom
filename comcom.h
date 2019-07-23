@@ -73,6 +73,7 @@ typedef enum {
   TK_ELSE,
   TK_WHILE,
   TK_FOR,
+  TK_ADDR,
   TK_EOF,
 } TokenKind;
 
@@ -84,6 +85,7 @@ struct Token {
   int val;
   char *str;
   int len;
+  Token *ptr_to;
 };
 Token *token;
 /* parse.c */
@@ -92,14 +94,17 @@ void program(void);
 char *tk_string(TokenKind tk);
 typedef struct LVar LVar;
 
+typedef struct Type Type;
 // ローカル変数の型
 typedef struct LVar {
   LVar *next;  // 次の変数かNULL
   char *name;  // 変数の名前
   int len;     // 名前の長さ
   int offset;  // RBPからのオフセット
+  Type *type;  // the type of local-var
 } LVar;
 LVar *locals;
+LVar *find_lvar(char *str, int len);
 
 /* node.c */
 typedef enum {
@@ -135,10 +140,10 @@ typedef struct Type Type;
 typedef struct Type {
   TypeKind kind;
   int offset;
-  Type *pointer_of;
+  Type *ptr_to;
 } Type;
 
-Type *new_type(TypeKind kind, Type *pointer_of);
+Type *new_type(TypeKind kind, Type *ptr_to);
 char *type_string(Type *type);
 
 typedef struct Node Node;
