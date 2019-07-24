@@ -115,7 +115,7 @@ void gen(Node *node) {
         gen_lval((Node *)node->args->data[i]);
         pop_reg("rax");
         pop_reg(reg);
-        printf("  mov [rax], %s\n", reg);
+        push_reg(reg);
       }
       gen(node->body);
       return;
