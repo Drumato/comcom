@@ -111,7 +111,11 @@ void gen(Node *node) {
       for (int i = 0; i < node->args->length; i++) {
         char *reg = caller_regs[i];
         if (reg == NULL) error("exhausted register");
-        printf("  push %s\n", reg);
+        push_reg(reg);
+        gen_lval((Node *)node->args->data[i]);
+        pop_reg("rax");
+        pop_reg(reg);
+        printf("  mov [rax], %s\n", reg);
       }
       gen(node->body);
       return;

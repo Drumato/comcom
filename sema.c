@@ -20,6 +20,7 @@ static Type *walk(Node *node) {
                                strlen(((Node *)node->args->data[i])->name));
         lvar->type = type;
         ((Node *)node->args->data[i])->type = type;
+        ((Node *)node->args->data[i])->offset = (i + 1) * 8;
         walk(((Node *)node->args->data[i]));
       }
       walk(node->body);
