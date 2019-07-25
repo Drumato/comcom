@@ -86,15 +86,16 @@ static Type *walk(Node *node) {
       return node->type;
     } break;
     case ND_ADDR: {
-      Type *old = walk(node->lhs);
-      node->type = new_type(T_ADDR, old);
+      Type *content = walk(node->lhs);
+      node->type = new_type(T_ADDR, content);
       return node->type;
       break;
     }
-    case ND_DEREF:
-      node->type = node->type->ptr_to;
+    case ND_DEREF: {
+      Type *content = walk(node->lhs);
+      node->type = content->ptr_to;
       return node->type;
-      break;
+    } break;
     default:
       break;
   }

@@ -1,5 +1,5 @@
 #!/bin/bash
-make > /dev/null
+rake > /dev/null
 try() {
   expected="$1"
   input="$2"
@@ -52,8 +52,7 @@ try 55 'int main(){int i; int sum; sum = 0;for(i = 1; i < 11;) {sum = sum + i;i 
 try 10 'int foo(){return 10;} int main(){ return foo();}'
 try 33 'int add(int x){return x+3;} int main(){ return add(30);}'
 try 70 'int add(int x,int y){return x+y;} int main(){ return add(30,40);}'
-try 3 'int main(){int x; int y; x = 3; y = &x; return *y;}'
-try 3 'int main(){int x; int y; int z; x = 3; y = 5; z = &y + 8; return *z;}'
-try 3 'int main(){int *x; *x = 3;return *x;}'
+try 3 'int main(){int a; int *x; a = 3; x = &a; return *x;}'
+try 33 'int add(int *x){return *x+3;} int main(){ int a; a = 30;return add(&a);}'
 echo -e "\e[33mAll Test Passed.\e[0m"
-make clean
+rake clean

@@ -1,6 +1,10 @@
 require 'rake/clean'
 task default: :comcom
-CLEAN.include("*.o").include("src/*.o").include("comcom")
+["*.o","src/*.o","comcom","core","*.txt","a.out","*.s"].each do |f|
+  CLEAN.include f
+
+end
+
 FLAGS = "-Wall -std=c11 -g"
 CC = "gcc"
 #CC = "clang"

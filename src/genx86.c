@@ -8,19 +8,18 @@ static void pop_reg(char *reg) { printf("  pop %s\n", reg); }
 static void mov_reg_to_reg(char *dst, char *src) {
   printf("  mov %s, %s\n", dst, src);
 }
-static void lea_reg_to_reg(char *dst, char *src) {
-  printf("  lea %s, %s\n", dst, src);
+static void lea_reg_to_mem(char *dst, char *src) {
+  printf("  lea %s, [%s]\n", dst, src);
 }
 static void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) error("expected identifier before assign-mark");
   mov_reg_to_reg("rax", "rbp");
   printf("  sub rax, %d\n", node->offset);
-  push_reg("rax");
   if (node->type->kind == T_ADDR) {
-    lea_reg_to_reg("rax", "rsp");
-    push_reg("rax");
-    return;
+    lea_reg_to_mem("rax", "rax");
   }
+  push_reg("rax");
+  return;
 }
 void gen(Node *node) {
   switch (node->kind) {
