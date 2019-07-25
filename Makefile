@@ -1,5 +1,5 @@
 CFLAGS=-Wall -std=c11 -g
-SRCS=$(wildcard *.c)
+SRCS=$(wildcard src/*.c)
 OBJS=$(SRCS:.c=.o)
 
 comcom: $(OBJS)
@@ -9,7 +9,7 @@ test:
 	gcc -o $@ $(OBJS) $(LDFLAGS)
 	./test.sh
 
-$(OBJS): comcom.h
+$(OBJS): src/comcom.h
 
 clean:
 	rm -f core comcom *.o *.txt *~ tmp* a.out test/*~ *.s
