@@ -59,4 +59,5 @@ try 4 'int main(){ int *x; return sizeof(*x);}'
 try 8 'int main(){ int *x; return sizeof(x);}'
 try 4 'int main(){ int *x; return sizeof(sizeof(x));}'
 echo -e "\e[33mAll Test Passed.\e[0m"
+
 rake clean

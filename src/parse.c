@@ -259,7 +259,14 @@ static Node *stmt(void) {
     strncpy(ident->name, tok->str, tok->len);
     ident->name[tok->len] = '\0';
     set_lvar(ident, tok->str, tok->len);
+    if (consume("[")) {
+      ident->expr = expr();
+      expect("]");
+    }
     node = new_node(ND_DEC, new_node_type(type), ident);
+    if (ident->expr != NULL) {
+      node->lhs->type = new_type(T_ARRAY, node->lhs->type);
+    }
   } else if (consume_if()) {  // if-stmt
     node->kind = ND_IF;
     expect("(");

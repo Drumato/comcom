@@ -136,6 +136,7 @@ typedef enum {
 typedef enum {
   T_INT,
   T_ADDR,
+  T_ARRAY,
 } TypeKind;
 
 typedef struct Type Type;
@@ -143,6 +144,7 @@ typedef struct Type {
   TypeKind kind;
   int offset;
   Type *ptr_to;
+  size_t ary_size;
 } Type;
 
 Type *new_type(TypeKind kind, Type *ptr_to);

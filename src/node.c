@@ -32,14 +32,14 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
   int offset;
   switch (kind) {
     case T_INT: {
-      offset = 32;
+      offset = 4;
       break;
     }
     case T_ADDR:
       offset = 8;
       break;
     default: {
-      offset = 32;
+      offset = 8;
       break;
     }
   }
@@ -73,6 +73,8 @@ char *type_string(Type *type) {
       return "Integer";
     case T_ADDR:
       return format("address_of -> %s", type_string(type->ptr_to));
+    case T_ARRAY:
+      return format("array of '%s'", type_string(type->ptr_to));
     default:
       return "";
   }

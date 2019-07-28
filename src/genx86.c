@@ -139,11 +139,14 @@ void gen(Node *node) {
   switch (node->kind) {
     case ND_ADD:
       if (node->lhs->type->kind == T_ADDR) {
-        printf("  imul rdi, 4\n");
+        printf("  imul rdi, %d\n", node->lhs->type->offset);
       }
       printf("  add rax, rdi\n");
       break;
     case ND_SUB:
+      if (node->lhs->type->kind == T_ADDR) {
+        printf("  imul rdi, %d\n", node->lhs->type->offset);
+      }
       printf("  sub rax, rdi\n");
       break;
     case ND_MUL:

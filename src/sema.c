@@ -19,9 +19,11 @@ static Type *walk(Node *node) {
         LVar *lvar = find_lvar(((Node *)node->args->data[i])->name,
                                strlen(((Node *)node->args->data[i])->name));
         lvar->type = type;
-        lvar->offset = (i + 1) * 8;
+        if (type->kind == T_INT) type->offset *= 2;
+        lvar->offset = (i + 1) * type->offset;
         ((Node *)node->args->data[i])->type = type;
-        ((Node *)node->args->data[i])->offset = (i + 1) * 8;
+        if (type->kind == T_INT) type->offset *= 2;
+        ((Node *)node->args->data[i])->offset = (i + 1) * type->offset;
         walk(((Node *)node->args->data[i]));
       }
       walk(node->body);
@@ -33,6 +35,7 @@ static Type *walk(Node *node) {
       break;
     case ND_DEC: {
       Type *type = node->lhs->type;
+      fprintf(stderr, "type:%s\n", type_string(type));
       LVar *lvar = find_lvar(node->rhs->name, strlen(node->rhs->name));
       lvar->type = type;
       node->rhs->type = type;
