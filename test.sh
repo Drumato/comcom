@@ -13,7 +13,7 @@ try() {
     echo -e "$input \e[32m=> $actual\e[0m"
   else
     echo "$input: $expected expected, but got $actual"
-    make clean
+    rake clean
     exit 1
   fi
 }
@@ -54,5 +54,9 @@ try 33 'int add(int x){return x+3;} int main(){ return add(30);}'
 try 70 'int add(int x,int y){return x+y;} int main(){ return add(30,40);}'
 try 3 'int main(){int a; int *x; a = 3; x = &a; return *x;}'
 try 33 'int add(int *x){return *x+3;} int main(){ int a; a = 30;return add(&a);}'
+try 4 'int main(){ int a; return sizeof(a);}'
+try 4 'int main(){ int *x; return sizeof(*x);}'
+try 8 'int main(){ int *x; return sizeof(x);}'
+try 4 'int main(){ int *x; return sizeof(sizeof(x));}'
 echo -e "\e[33mAll Test Passed.\e[0m"
 rake clean

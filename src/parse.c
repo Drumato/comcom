@@ -13,6 +13,13 @@ static bool consume_return(void) {
   token = token->next;
   return true;
 }
+static bool consume_sizeof(void) {
+  if ((token->kind != TK_SIZEOF || strlen("sizeof") != token->len ||
+       memcmp(token->str, "sizeof", token->len)))
+    return false;
+  token = token->next;
+  return true;
+}
 static bool consume_if(void) {
   if ((token->kind != TK_IF || strlen("if") != token->len ||
        memcmp(token->str, "if", token->len)))
@@ -169,6 +176,12 @@ static Node *unary(void) {
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), term());
   if (consume("*")) return new_node(ND_DEREF, unary(), new_node_num(0));
   if (consume("&")) return new_node(ND_ADDR, unary(), new_node_num(0));
+  if (consume_sizeof()) {
+    Node *node = (Node *)calloc(1, sizeof(Node));
+    node->kind = ND_SIZEOF;
+    node->expr = unary();
+    return node;
+  }
   return term();
 }
 static Node *mul(void) {
@@ -344,46 +357,4 @@ void program(void) {
   int i = 0;
   while (!at_eof()) code[i++] = func();
   code[i] = NULL;
-}
-char *tk_string(TokenKind tk) {
-  switch (tk) {
-    case TK_RESERVED:
-      return "RESERVED";
-    case TK_IDENT:
-      return "IDENTIFIER";
-    case TK_NUM:
-      return "NUMBER";
-    case TK_EOF:
-      return "EOF";
-    default:
-      return "";
-  }
-}
-char *nk_string(NodeKind nk) {
-  switch (nk) {
-    case ND_ADD:  //+
-      return "add-node";
-    case ND_SUB:  //-
-      return "sub-node";
-    case ND_MUL:  //
-      return "mul-node";
-    case ND_DIV:  // /
-      return "div-node";
-    case ND_EQ:  // ==
-      return "eq-node";
-    case ND_NTEQ:  // !=
-      return "nt-node";
-    case ND_GT:  // <
-      return "gt-node";
-    case ND_GTEQ:  // <=
-      return "gteq-node";
-    case ND_NUM:  // integer
-      return "num-node";
-    case ND_RETURN:  // integer
-      return "return-stmt";
-    case ND_IF:  // integer
-      return "if-stmt";
-    default:
-      return "";
-  }
 }

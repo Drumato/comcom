@@ -73,6 +73,7 @@ typedef enum {
   TK_ELSE,
   TK_WHILE,
   TK_FOR,
+  TK_SIZEOF,
   TK_ADDR,
   TK_EOF,
 } TokenKind;
@@ -129,6 +130,7 @@ typedef enum {
   ND_BLOCK,   // { stmt* }
   ND_ADDR,    // &x
   ND_DEREF,   // *x
+  ND_SIZEOF,  // sizeof
 } NodeKind;
 
 typedef enum {

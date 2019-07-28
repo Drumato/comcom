@@ -48,6 +48,10 @@ static Type *walk(Node *node) {
     case ND_GTEQ:
       node->lhs->type = walk(node->lhs);
       node->rhs->type = walk(node->rhs);
+      if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_INT) {
+        node->type = new_type(T_INT, NULL);
+      }
+      return node->type;
       break;
     case ND_ASSIGN:
       node->lhs->type = walk(node->lhs);
@@ -94,6 +98,22 @@ static Type *walk(Node *node) {
     case ND_DEREF: {
       Type *content = walk(node->lhs);
       node->type = content->ptr_to;
+      return node->type;
+    } break;
+    case ND_SIZEOF: {
+      Type *content = walk(node->expr);
+      node->type = new_type(T_INT, NULL);
+      node->kind = ND_NUM;
+      switch (content->kind) {
+        case T_INT: {
+          node->val = 4;
+          break;
+        }
+        case T_ADDR: {
+          node->val = 8;
+          break;
+        }
+      }
       return node->type;
     } break;
     default:

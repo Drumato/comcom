@@ -1,6 +1,6 @@
 #include "comcom.h"
 
-char *caller_regs[] = {"rsi", "rdi", "rdx", "rcx", "r8", "r9", NULL};
+char *caller_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL};
 int label = 1;
 static void push_reg(char *reg) { printf("  push %s\n", reg); }
 static void push_const(int val) { printf("  push %d\n", val); }
@@ -138,6 +138,9 @@ void gen(Node *node) {
   pop_reg("rax");
   switch (node->kind) {
     case ND_ADD:
+      if (node->lhs->type->kind == T_ADDR) {
+        printf("  imul rdi, 4\n");
+      }
       printf("  add rax, rdi\n");
       break;
     case ND_SUB:

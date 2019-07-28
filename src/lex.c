@@ -48,6 +48,11 @@ Token *tokenize(char *p) {
       p += 3;
       continue;
     }
+    if (!strncmp(p, "sizeof", 6) && !isalnum(p[6])) {
+      cur = new_token(TK_SIZEOF, cur, p, 6);
+      p += 6;
+      continue;
+    }
     if (isalpha(*p)) {
       char *start = p;
       while (isalpha(*p) || *p == '_') {
