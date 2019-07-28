@@ -266,6 +266,7 @@ static Node *stmt(void) {
     node = new_node(ND_DEC, new_node_type(type), ident);
     if (ident->expr != NULL) {
       node->lhs->type = new_type(T_ARRAY, node->lhs->type);
+      node->lhs->type->ary_size = ident->expr->val;
     }
   } else if (consume_if()) {  // if-stmt
     node->kind = ND_IF;

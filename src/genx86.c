@@ -12,7 +12,6 @@ static void lea_reg_to_mem(char *dst, char *src) {
   printf("  lea %s, [%s]\n", dst, src);
 }
 static void gen_lval(Node *node) {
-  if (node->kind != ND_LVAR) error("expected identifier before assign-mark");
   mov_reg_to_reg("rax", "rbp");
   printf("  sub rax, %d\n", node->offset);
   if (node->type->kind == T_ADDR) {
@@ -128,6 +127,12 @@ void gen(Node *node) {
       push_reg("rax");
       return;
     case ND_DEC:
+      if (node->lhs->type->kind == T_ARRAY) {
+        mov_reg_to_reg("rax", "rbp");
+        printf("  sub rax, %ld\n",
+               node->rhs->type->ary_size * node->rhs->type->offset);
+        push_reg("rax");
+      }
       return;
     default:
       break;

@@ -35,7 +35,6 @@ static Type *walk(Node *node) {
       break;
     case ND_DEC: {
       Type *type = node->lhs->type;
-      fprintf(stderr, "type:%s\n", type_string(type));
       LVar *lvar = find_lvar(node->rhs->name, strlen(node->rhs->name));
       lvar->type = type;
       node->rhs->type = type;
@@ -53,6 +52,12 @@ static Type *walk(Node *node) {
       node->rhs->type = walk(node->rhs);
       if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_INT) {
         node->type = new_type(T_INT, NULL);
+      } else if (node->lhs->type->kind == T_ADDR &&
+                 node->rhs->type->kind == T_INT) {
+        node->type = new_type(T_ADDR, node->lhs->type->ptr_to);
+      } else if (node->lhs->type->kind == T_ARRAY &&
+                 node->rhs->type->kind == T_INT) {
+        node->type = new_type(T_ARRAY, node->lhs->type->ptr_to);
       }
       return node->type;
       break;
