@@ -7,6 +7,26 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int length) {
   cur->next = tok;
   return tok;
 }
+static Token *tokenize_keyword(char *p, Token *cur) {
+  char *keywords[] = {"return", "if",  "else",   "while",
+                      "for",    "int", "sizeof", NULL};
+  TokenKind tk_kinds[] = {TK_RETURN, TK_IF,  TK_ELSE,  TK_WHILE,
+                          TK_FOR,    TK_INT, TK_SIZEOF};
+  for (int i = 0; keywords[i] != NULL; i++) {
+    if (!strncmp(p, keywords[i], strlen(keywords[i])) &&
+        !isalnum(p[strlen(keywords[i])]))
+      return new_token(tk_kinds[i], cur, p, strlen(keywords[i]));
+  }
+  return NULL;
+}
+static Token *multilength_mark(char *p, Token *cur) {
+  char *marks[] = {"<=", ">=", "==", "!=", NULL};
+  for (int i = 0; marks[i] != NULL; i++) {
+    if (!strncmp(p, marks[i], strlen(marks[i])))
+      return new_token(TK_RESERVED, cur, p, 2);
+  }
+  return NULL;
+}
 
 Token *tokenize(char *p) {
   Token head;
@@ -18,39 +38,10 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
-    if (!strncmp(p, "return", 6) && !isalnum(p[6])) {
-      cur = new_token(TK_RETURN, cur, p, 6);
-      p += 6;
-      continue;
-    }
-    if (!strncmp(p, "if", 2) && !isalnum(p[2])) {
-      cur = new_token(TK_IF, cur, p, 2);
-      p += 2;
-      continue;
-    }
-    if (!strncmp(p, "else", 4) && !isalnum(p[4])) {
-      cur = new_token(TK_ELSE, cur, p, 4);
-      p += 4;
-      continue;
-    }
-    if (!strncmp(p, "while", 5) && !isalnum(p[5])) {
-      cur = new_token(TK_WHILE, cur, p, 5);
-      p += 5;
-      continue;
-    }
-    if (!strncmp(p, "for", 3) && !isalnum(p[3])) {
-      cur = new_token(TK_FOR, cur, p, 3);
-      p += 3;
-      continue;
-    }
-    if (!strncmp(p, "int", 3) && !isalnum(p[3])) {
-      cur = new_token(TK_INT, cur, p, 3);
-      p += 3;
-      continue;
-    }
-    if (!strncmp(p, "sizeof", 6) && !isalnum(p[6])) {
-      cur = new_token(TK_SIZEOF, cur, p, 6);
-      p += 6;
+    Token *key;
+    if ((key = tokenize_keyword(p, cur)) != NULL) {
+      cur = key;
+      p += key->len;
       continue;
     }
     if (isalpha(*p)) {
@@ -61,10 +52,10 @@ Token *tokenize(char *p) {
       cur = new_token(TK_IDENT, cur, start, p - start);
       continue;
     }
-    if (!strncmp(p, "<=", 2) || !strncmp(p, ">=", 2) || !strncmp(p, "==", 2) ||
-        !strncmp(p, "!=", 2)) {
-      cur = new_token(TK_RESERVED, cur, p, 2);
-      p += 2;
+    if ((key = multilength_mark(p, cur)) != NULL) {
+      cur = key;
+      p += key->len;
+      continue;
     }
 
     if (strchr("+-*/[]{}()<>=!;,&", *p) != NULL) {
