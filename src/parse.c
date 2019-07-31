@@ -6,30 +6,9 @@ static bool consume(char *op) {
   token = token->next;
   return true;
 }
-static bool consume_return(void) {
-  if ((token->kind != TK_RETURN || strlen("return") != token->len ||
-       memcmp(token->str, "return", token->len)))
-    return false;
-  token = token->next;
-  return true;
-}
-static bool consume_sizeof(void) {
-  if ((token->kind != TK_SIZEOF || strlen("sizeof") != token->len ||
-       memcmp(token->str, "sizeof", token->len)))
-    return false;
-  token = token->next;
-  return true;
-}
-static bool consume_if(void) {
-  if ((token->kind != TK_IF || strlen("if") != token->len ||
-       memcmp(token->str, "if", token->len)))
-    return false;
-  token = token->next;
-  return true;
-}
-static bool consume_else(void) {
-  if ((token->kind != TK_ELSE || strlen("else") != token->len ||
-       memcmp(token->str, "else", token->len)))
+static bool consume_keyword(TokenKind kind, char *p) {
+  if ((token->kind != kind || strlen(p) != token->len ||
+       memcmp(token->str, p, token->len)))
     return false;
   token = token->next;
   return true;
@@ -50,20 +29,6 @@ static Token *consume_type(void) {
   Token *tok = token;
   token = token->next;
   return tok;
-}
-static bool consume_while(void) {
-  if ((token->kind != TK_WHILE || strlen("while") != token->len ||
-       memcmp(token->str, "while", token->len)))
-    return false;
-  token = token->next;
-  return true;
-}
-static bool consume_for(void) {
-  if ((token->kind != TK_FOR || strlen("for") != token->len ||
-       memcmp(token->str, "for", token->len)))
-    return false;
-  token = token->next;
-  return true;
 }
 static bool consume_block(void) {
   if ((token->kind != TK_RESERVED || strlen("{") != token->len ||
@@ -176,7 +141,7 @@ static Node *unary(void) {
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), term());
   if (consume("*")) return new_node(ND_DEREF, unary(), new_node_num(0));
   if (consume("&")) return new_node(ND_ADDR, unary(), new_node_num(0));
-  if (consume_sizeof()) {
+  if (consume_keyword(TK_SIZEOF, "sizeof")) {
     Node *node = (Node *)calloc(1, sizeof(Node));
     node->kind = ND_SIZEOF;
     node->expr = unary();
@@ -243,7 +208,7 @@ static Node *expr(void) { return assign(); }
 static Node *stmt(void) {
   Node *node = calloc(1, sizeof(Node));
   Token *type;
-  if (consume_return()) {  // return-stmt
+  if (consume_keyword(TK_RETURN, "return")) {  // return-stmt
     node->kind = ND_RETURN;
     node->lhs = expr();
   } else if ((type = consume_type()) != NULL) {
@@ -268,22 +233,22 @@ static Node *stmt(void) {
       node->lhs->type = new_type(T_ARRAY, node->lhs->type);
       node->lhs->type->ary_size = ident->expr->val;
     }
-  } else if (consume_if()) {  // if-stmt
+  } else if (consume_keyword(TK_IF, "if")) {  // if-stmt
     node->kind = ND_IF;
     expect("(");
     node->expr = expr();
     expect(")");
     node->body = stmt();
-    if (consume_else()) node->alter = stmt();
+    if (consume_keyword(TK_ELSE, "else")) node->alter = stmt();
     return node;
-  } else if (consume_while()) {  // while-stmt
+  } else if (consume_keyword(TK_WHILE, "while")) {  // while-stmt
     node->kind = ND_WHILE;
     expect("(");
     node->expr = expr();
     expect(")");
     node->body = stmt();
     return node;
-  } else if (consume_for()) {  // for-stmt
+  } else if (consume_keyword(TK_FOR, "for")) {  // for-stmt
     node->kind = ND_FOR;
     expect("(");
     if (!consume(";")) {
