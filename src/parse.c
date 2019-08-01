@@ -13,11 +13,15 @@ static bool consume_keyword(TokenKind kind, char *p) {
   token = token->next;
   return true;
 }
+static char *scopy(char *src, char *dst, int length) {
+  src = (char *)malloc(length * sizeof(char));
+  strncpy(src, dst, length);
+  src[length] = '\0';
+  return src;
+}
 static Token *ptr_to(Token *tok) {
   Token *token = (Token *)calloc(1, sizeof(Token));
-  token->str = malloc(tok->len * sizeof(char));
-  strncpy(token->str, tok->str, tok->len);
-  token->str[tok->len] = '\0';
+  token->str = scopy(token->str, tok->str, tok->len);
   token->kind = TK_ADDR;
   token->ptr_to = tok;
   return token;
@@ -100,9 +104,7 @@ static Node *term(void) {
           ary_push(node->args, (void *)expr());
         }
       }
-      node->name = (char *)malloc(tok->len * sizeof(char));
-      strncpy(node->name, tok->str, tok->len);
-      node->name[tok->len] = '\0';
+      node->name = scopy(node->name, tok->str, tok->len);
       return node;
     } else {
       node->kind = ND_LVAR;
@@ -113,9 +115,7 @@ static Node *term(void) {
       } else {
         error("undefined variable start with '%c'", tok->str[0]);
       }
-      node->name = (char *)malloc(tok->len * sizeof(char));
-      strncpy(node->name, tok->str, tok->len);
-      node->name[tok->len] = '\0';
+      node->name = scopy(node->name, tok->str, tok->len);
       return node;
     }
   }
@@ -123,9 +123,7 @@ static Node *term(void) {
     tok = consume_ident();
     Node *node = (Node *)calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
-    node->name = (char *)malloc(tok->len * sizeof(char));
-    strncpy(node->name, tok->str, tok->len);
-    node->name[tok->len] = '\0';
+    node->name = scopy(node->name, tok->str, tok->len);
     set_lvar(node, tok->str, tok->len);
     return node;
   }
@@ -220,9 +218,7 @@ static Node *stmt(void) {
     }
     Node *ident = (Node *)calloc(1, sizeof(Node));
     ident->kind = ND_LVAR;
-    ident->name = malloc(tok->len * sizeof(char));
-    strncpy(ident->name, tok->str, tok->len);
-    ident->name[tok->len] = '\0';
+    ident->name = scopy(ident->name, tok->str, tok->len);
     set_lvar(ident, tok->str, tok->len);
     if (consume("[")) {
       ident->expr = expr();
@@ -285,9 +281,7 @@ static Node *func(void) {
   if (!next_lparen() || !(tok = consume_ident())) {
     error("function name must be specified: got '%s'", tok->str);
   }
-  node->name = (char *)malloc(tok->len * sizeof(char));
-  strncpy(node->name, tok->str, tok->len);
-  node->name[tok->len] = '\0';
+  node->name = scopy(node->name, tok->str, tok->len);
   node->kind = ND_FUNC;
   expect("(");
   node->args = new_ary();
@@ -298,9 +292,7 @@ static Node *func(void) {
     Token *tok = consume_ident();
     arg = (Node *)calloc(1, sizeof(Node));
     arg->kind = ND_LVAR;
-    arg->name = (char *)malloc(tok->len * sizeof(char));
-    strncpy(arg->name, tok->str, tok->len);
-    arg->name[tok->len] = '\0';
+    arg->name = scopy(arg->name, tok->str, tok->len);
     set_lvar(arg, tok->str, tok->len);
     arg->type = inference_type(type);
     ary_push(node->args, (void *)arg);
@@ -314,9 +306,7 @@ static Node *func(void) {
       Token *tok = consume_ident();
       arg = (Node *)calloc(1, sizeof(Node));
       arg->kind = ND_LVAR;
-      arg->name = (char *)malloc(tok->len * sizeof(char));
-      strncpy(arg->name, tok->str, tok->len);
-      arg->name[tok->len] = '\0';
+      arg->name = scopy(arg->name, tok->str, tok->len);
       set_lvar(arg, tok->str, tok->len);
       arg->type = inference_type(type);
       set_lvar(arg, node->name, strlen(node->name));
