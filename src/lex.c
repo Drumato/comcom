@@ -7,7 +7,7 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int length) {
   cur->next = tok;
   return tok;
 }
-static Token *tokenize_keyword(char *p, Token *cur) {
+static Token *multilength(char *p, Token *cur) {
   char *keywords[] = {"return", "if",  "else",   "while",
                       "for",    "int", "sizeof", NULL};
   TokenKind tk_kinds[] = {TK_RETURN, TK_IF,  TK_ELSE,  TK_WHILE,
@@ -17,9 +17,6 @@ static Token *tokenize_keyword(char *p, Token *cur) {
         !isalnum(p[strlen(keywords[i])]))
       return new_token(tk_kinds[i], cur, p, strlen(keywords[i]));
   }
-  return NULL;
-}
-static Token *multilength_mark(char *p, Token *cur) {
   char *marks[] = {"<=", ">=", "==", "!=", NULL};
   for (int i = 0; marks[i] != NULL; i++) {
     if (!strncmp(p, marks[i], strlen(marks[i])))
@@ -38,10 +35,10 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
-    Token *key;
-    if ((key = tokenize_keyword(p, cur)) != NULL) {
-      cur = key;
-      p += key->len;
+    Token *t;
+    if ((t = multilength(p, cur)) != NULL) {
+      cur = t;
+      p += t->len;
       continue;
     }
     if (isalpha(*p)) {
@@ -50,11 +47,6 @@ Token *tokenize(char *p) {
         p++;
       }
       cur = new_token(TK_IDENT, cur, start, p - start);
-      continue;
-    }
-    if ((key = multilength_mark(p, cur)) != NULL) {
-      cur = key;
-      p += key->len;
       continue;
     }
 
