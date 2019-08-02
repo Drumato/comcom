@@ -8,6 +8,11 @@ static void pop_reg(char *reg) { printf("  pop %s\n", reg); }
 static void mov_reg_to_reg(char *dst, char *src) {
   printf("  mov %s, %s\n", dst, src);
 }
+static void compare(char *inst) {
+  printf("  cmp rax,rdi\n");
+  printf("  %s al\n", inst);
+  printf("  movzb rax, al\n");
+}
 static void lea_reg_to_mem(char *dst, char *src) {
   printf("  lea %s, [%s]\n", dst, src);
 }
@@ -162,24 +167,16 @@ void gen(Node *node) {
       printf("  idiv rdi\n");
       break;
     case ND_EQ:
-      printf("  cmp rax,rdi\n");
-      printf("  sete al\n");
-      printf("  movzb rax, al\n");
+      compare("sete");
       break;
     case ND_NTEQ:
-      printf("  cmp rax,rdi\n");
-      printf("  setne al\n");
-      printf("  movzb rax, al\n");
+      compare("setne");
       break;
     case ND_GT:
-      printf("  cmp rax,rdi\n");
-      printf("  setl al\n");
-      printf("  movzb rax, al\n");
+      compare("setl");
       break;
     case ND_GTEQ:
-      printf("  cmp rax,rdi\n");
-      printf("  setle al\n");
-      printf("  movzb rax, al\n");
+      compare("setle");
       break;
     default:
       break;
