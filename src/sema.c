@@ -40,27 +40,6 @@ static Type *walk(Node *node) {
       node->rhs->type = type;
       return type;
     } break;
-    case ND_ADD:
-    case ND_SUB:
-    case ND_MUL:
-    case ND_DIV:
-    case ND_EQ:
-    case ND_NTEQ:
-    case ND_GT:
-    case ND_GTEQ:
-      node->lhs->type = walk(node->lhs);
-      node->rhs->type = walk(node->rhs);
-      if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_INT) {
-        node->type = new_type(T_INT, NULL);
-      } else if (node->lhs->type->kind == T_ADDR &&
-                 node->rhs->type->kind == T_INT) {
-        node->type = new_type(T_ADDR, node->lhs->type->ptr_to);
-      } else if (node->lhs->type->kind == T_ARRAY &&
-                 node->rhs->type->kind == T_INT) {
-        node->type = new_type(T_ARRAY, node->lhs->type->ptr_to);
-      }
-      return node->type;
-      break;
     case ND_ASSIGN:
       node->lhs->type = walk(node->lhs);
       node->rhs->type = walk(node->rhs);
@@ -125,6 +104,23 @@ static Type *walk(Node *node) {
       return node->type;
     } break;
     default:
+      node->lhs->type = walk(node->lhs);
+      node->rhs->type = walk(node->rhs);
+      if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_INT) {
+        node->type = new_type(T_INT, NULL);
+      } else if (node->lhs->type->kind == T_ADDR &&
+                 node->rhs->type->kind == T_INT) {
+        node->type = new_type(T_ADDR, node->lhs->type->ptr_to);
+        if (node->kind == ND_ADD) {
+          node->kind = ND_SUB;
+        } else if (node->kind == ND_SUB) {
+          node->kind = ND_ADD;
+        }
+      } else if (node->lhs->type->kind == T_ARRAY &&
+                 node->rhs->type->kind == T_INT) {
+        node->type = new_type(T_ARRAY, node->lhs->type->ptr_to);
+      }
+      return node->type;
       break;
   }
   return NULL;
