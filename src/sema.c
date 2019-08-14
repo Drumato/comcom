@@ -1,5 +1,7 @@
 #include "comcom.h"
 
+LVar *find_lvar(char *str, int len);
+static void set_lvar(Node *node, char *name, int length, int offset);
 static Type *walk(Node *node);
 void semantic(void) {
   for (int i = 0; i < 100; i++) {
@@ -14,19 +16,16 @@ static Type *walk(Node *node) {
   if (node == NULL) return NULL;
   switch (node->kind) {
     case ND_FUNC:
+      locals = NULL;
       for (int i = 0; i < node->args->length; i++) {
-        Type *type = ((Node *)node->args->data[i])->type;
-        LVar *lvar = find_lvar(((Node *)node->args->data[i])->name,
-                               strlen(((Node *)node->args->data[i])->name));
-        lvar->type = type;
-        if (type->kind == T_INT) type->offset *= 2;
-        lvar->offset = (i + 1) * type->offset;
-        ((Node *)node->args->data[i])->type = type;
-        if (type->kind == T_INT) type->offset *= 2;
-        ((Node *)node->args->data[i])->offset = (i + 1) * type->offset;
-        walk(((Node *)node->args->data[i]));
+        Node *arg = (Node *)node->args->data[i];
+        set_lvar(arg, arg->name, strlen(arg->name), arg->type->offset);
+        LVar *var = find_lvar(arg->name, strlen(arg->name));
+        var->type = arg->type;
+        walk(arg);
       }
       walk(node->body);
+      node->locals = locals;
       break;
     case ND_BLOCK:
       for (int i = 0; i < node->stmts->length; i++) {
@@ -35,9 +34,16 @@ static Type *walk(Node *node) {
       break;
     case ND_DEC: {
       Type *type = node->lhs->type;
+      node->rhs->type = type;
+      if (node->rhs->type->kind == T_ARRAY) {
+        set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
+                 type->ary_size * type->ptr_to->offset);
+      } else {
+        set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
+                 type->offset);
+      }
       LVar *lvar = find_lvar(node->rhs->name, strlen(node->rhs->name));
       lvar->type = type;
-      node->rhs->type = type;
       return type;
     } break;
     case ND_ASSIGN:
@@ -93,7 +99,7 @@ static Type *walk(Node *node) {
       node->kind = ND_NUM;
       switch (content->kind) {
         case T_INT: {
-          node->val = 4;
+          node->val = 8;
           break;
         }
         case T_ADDR: {
@@ -128,4 +134,25 @@ static Type *walk(Node *node) {
       break;
   }
   return NULL;
+}
+
+LVar *find_lvar(char *str, int len) {
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == len && !memcmp(str, var->name, var->len)) return var;
+  }
+  return NULL;
+}
+static void set_lvar(Node *node, char *name, int length, int offset) {
+  node->kind = ND_LVAR;
+  LVar *lvar = calloc(1, sizeof(LVar));
+  if (locals) lvar->next = locals;
+  lvar->name = name;
+  lvar->len = length;
+  if (locals)
+    lvar->offset = locals->offset + offset;
+  else {
+    lvar->offset = offset;
+  }
+  node->offset = lvar->offset;
+  locals = lvar;
 }

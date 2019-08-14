@@ -69,23 +69,6 @@ static int expect_number() {
 }
 
 static bool at_eof() { return token->kind == TK_EOF; }
-
-LVar *find_lvar(char *str, int len) {
-  for (LVar *var = locals; var; var = var->next) {
-    if (var->len == len && !memcmp(str, var->name, var->len)) return var;
-  }
-  return NULL;
-}
-static void set_lvar(Node *node, char *name, int length) {
-  node->kind = ND_LVAR;
-  LVar *lvar = calloc(1, sizeof(LVar));
-  if (locals) lvar->next = locals;
-  lvar->name = name;
-  lvar->len = length;
-  if (locals) lvar->offset = locals->offset;
-  node->offset = lvar->offset;
-  locals = lvar;
-}
 static Node *expr(void);
 static Node *term(void) {
   Token *tok = consume_ident();
@@ -108,13 +91,6 @@ static Node *term(void) {
       return node;
     } else {
       node->kind = ND_LVAR;
-
-      LVar *lvar = find_lvar(tok->str, tok->len);
-      if (lvar) {
-        node->offset = lvar->offset;
-      } else {
-        error("undefined variable start with '%c'", tok->str[0]);
-      }
       node->name = scopy(node->name, tok->str, tok->len);
       return node;
     }
@@ -124,7 +100,6 @@ static Node *term(void) {
     Node *node = (Node *)calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
     node->name = scopy(node->name, tok->str, tok->len);
-    set_lvar(node, tok->str, tok->len);
     return node;
   }
   if (consume("(")) {
@@ -212,14 +187,9 @@ static Node *stmt(void) {
   } else if ((type = consume_type()) != NULL) {
     while (consume("*")) type = ptr_to(type);
     Token *tok = consume_ident();
-    LVar *lvar = find_lvar(tok->str, tok->len);
-    if (lvar) {
-      error("already declared: '%s'", lvar->name);
-    }
     Node *ident = (Node *)calloc(1, sizeof(Node));
     ident->kind = ND_LVAR;
     ident->name = scopy(ident->name, tok->str, tok->len);
-    set_lvar(ident, tok->str, tok->len);
     if (consume("[")) {
       ident->expr = expr();
       expect("]");
@@ -273,7 +243,6 @@ static Node *stmt(void) {
   return node;
 }
 static Node *func(void) {
-  locals = NULL;
   Node *node = calloc(1, sizeof(Node));
   Token *tok;
   if (consume_type() == NULL) {
@@ -294,7 +263,6 @@ static Node *func(void) {
     arg = (Node *)calloc(1, sizeof(Node));
     arg->kind = ND_LVAR;
     arg->name = scopy(arg->name, tok->str, tok->len);
-    set_lvar(arg, tok->str, tok->len);
     arg->type = inference_type(type);
     ary_push(node->args, (void *)arg);
     for (;;) {
@@ -308,21 +276,11 @@ static Node *func(void) {
       arg = (Node *)calloc(1, sizeof(Node));
       arg->kind = ND_LVAR;
       arg->name = scopy(arg->name, tok->str, tok->len);
-      set_lvar(arg, tok->str, tok->len);
       arg->type = inference_type(type);
-      set_lvar(arg, node->name, strlen(node->name));
       ary_push(node->args, (void *)arg);
     }
   }
   node->body = stmt();
-  node->locals = locals;
-  for (LVar *var = locals; var; var = var->next) {
-    fprintf(stderr, "lvar->name %s offset->%d\n", var->name, var->offset);
-    if (var->next == NULL) {
-      node->offset = var->offset;
-      break;
-    }
-  }
   return node;
 }
 void program(void) {
