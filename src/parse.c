@@ -47,12 +47,6 @@ static Token *consume_ident(void) {
   token = token->next;
   return tok;
 }
-static bool next_lparen(void) {
-  if (token->next->kind != TK_RESERVED ||
-      strncmp(token->next->str, "(", 1) != 0)
-    return false;
-  return true;
-}
 
 static void expect(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
@@ -67,6 +61,14 @@ static int expect_number() {
   token = token->next;
   return val;
 }
+static Node *expr(void);
+static Node *declare(Node *node) {
+  if (consume("[")) {
+    node->expr = expr();
+    expect("]");
+  }
+  return node;
+}
 
 static bool at_eof() { return token->kind == TK_EOF; }
 static Node *expr(void);
@@ -74,26 +76,34 @@ static Node *term(void) {
   Token *tok = consume_ident();
   if (tok) {
     Node *node = calloc(1, sizeof(Node));
-    if (consume("(")) {
-      node->kind = ND_CALL;
-      node->args = new_ary();
-      if (!consume(")")) {
-        ary_push(node->args, (void *)expr());
-        for (;;) {
-          if (consume(")")) {
-            break;
-          }
-          expect(",");
-          ary_push(node->args, (void *)expr());
-        }
-      }
-      node->name = scopy(node->name, tok->str, tok->len);
-      return node;
-    } else {
+    node->name = scopy(node->name, tok->str, tok->len);
+    if (!consume("(")) {
       node->kind = ND_LVAR;
-      node->name = scopy(node->name, tok->str, tok->len);
+      if (consume("[")) {
+        Node *n = (Node *)calloc(1, sizeof(Node));
+        n->kind = ND_DEREF;
+        Node *add = (Node *)calloc(1, sizeof(Node));
+        n->lhs = add;
+        add->lhs = node;
+        add->rhs = expr();
+        expect("]");
+        return n;
+      }
       return node;
     }
+    node->kind = ND_CALL;
+    node->args = new_ary();
+    if (!consume(")")) {
+      ary_push(node->args, (void *)expr());
+      for (;;) {
+        if (consume(")")) {
+          break;
+        }
+        expect(",");
+        ary_push(node->args, (void *)expr());
+      }
+    }
+    return node;
   }
   if (consume_type() != NULL) {
     tok = consume_ident();
@@ -190,10 +200,7 @@ static Node *stmt(void) {
     Node *ident = (Node *)calloc(1, sizeof(Node));
     ident->kind = ND_LVAR;
     ident->name = scopy(ident->name, tok->str, tok->len);
-    if (consume("[")) {
-      ident->expr = expr();
-      expect("]");
-    }
+    ident = declare(ident);
     node = new_node(ND_DEC, new_node_type(type), ident);
     if (ident->expr != NULL) {
       node->lhs->type = new_type(T_ARRAY, node->lhs->type);
@@ -242,18 +249,8 @@ static Node *stmt(void) {
   if (!consume(";")) error("'%s' is not ';'", token->str);
   return node;
 }
-static Node *func(void) {
-  Node *node = calloc(1, sizeof(Node));
-  Token *tok;
-  if (consume_type() == NULL) {
-    error("function must be started with type_name: got '%s'", token->str);
-  }
-  if (!next_lparen() || !(tok = consume_ident())) {
-    error("function name must be specified: got '%s'", tok->str);
-  }
-  node->name = scopy(node->name, tok->str, tok->len);
+static Node *func(Node *node) {
   node->kind = ND_FUNC;
-  expect("(");
   node->args = new_ary();
   Node *arg;
   if (!consume(")")) {
@@ -283,8 +280,33 @@ static Node *func(void) {
   node->body = stmt();
   return node;
 }
+static Node *global(Node *node, Token *type) {
+  node->kind = ND_GLOBAL;
+  node = declare(node);
+  return new_node(ND_DEC, new_node_type(type), node);
+}
+static Node *toplevel(void) {
+  Node *node = calloc(1, sizeof(Node));
+  Token *tok;
+  Token *type;
+  while (consume("*")) type = ptr_to(type);
+  if ((type = consume_type()) == NULL) {
+    error("toplevel must be started with type_name: got '%s'", token->str);
+  }
+  if ((tok = consume_ident()) == NULL) {
+    error("toplevel name must be specified: got '%s'", tok->str);
+  }
+  node->name = scopy(node->name, tok->str, tok->len);
+  if (consume("(")) {
+    node = func(node);
+  } else {
+    node = global(node, type);
+    if (!consume(";")) error("'%s' is not ';'", token->str);
+  }
+  return node;
+}
 void program(void) {
   int i = 0;
-  while (!at_eof()) code[i++] = func();
+  while (!at_eof()) code[i++] = toplevel();
   code[i] = NULL;
 }

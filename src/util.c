@@ -128,13 +128,14 @@ void map_puti(Map *map, char *key, int val) {
 
 void *map_get(Map *map, char *key) {
   for (int i = map->keys->length - 1; i >= 0; i--)
-    if (!strcmp(map->keys->data[i], key)) return map->vals->data[i];
+    if (!strcmp((char *)map->keys->data[i], key)) return map->vals->data[i];
   return NULL;
 }
 
 int map_geti(Map *map, char *key, int default_) {
   for (int i = map->keys->length - 1; i >= 0; i--)
-    if (!strcmp(map->keys->data[i], key)) return (intptr_t)map->vals->data[i];
+    if (!strcmp((char *)map->keys->data[i], key))
+      return (intptr_t)map->vals->data[i];
   return default_;
 }
 

@@ -103,8 +103,10 @@ typedef struct LVar {
   int len;     // 名前の長さ
   int offset;  // RBPからのオフセット
   Type *type;  // the type of local-var
+  bool is_gvar;
 } LVar;
 LVar *locals;
+Map *globals;
 LVar *find_lvar(char *str, int len);
 
 /* node.c */
@@ -127,6 +129,7 @@ typedef enum {
   ND_GTEQ,    // <=
   ND_NUM,     // integer
   ND_LVAR,    // local variables
+  ND_GLOBAL,  // global variables
   ND_BLOCK,   // { stmt* }
   ND_ADDR,    // &x
   ND_DEREF,   // *x
@@ -165,7 +168,7 @@ struct Node {
   Type *type;    // indicates node_type
   char *name;    // function names
   int val;       // integer-value for integer
-  int offset;    // stack-offset for local variables
+  LVar *var;     // local-variables
   LVar *locals;
 };
 char *nk_string(NodeKind nk);
@@ -183,3 +186,5 @@ void semantic(void);
 
 /* genx86.c */
 void gen(Node *node);
+void gen_global(void);
+

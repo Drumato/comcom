@@ -17,10 +17,15 @@ static void lea_reg_to_mem(char *dst, char *src) {
   printf("  lea %s, [%s]\n", dst, src);
 }
 static void gen_lval(Node *node) {
+  if (node->var && node->var->is_gvar) {
+    printf("  lea rax, %s\n", node->name);
+    push_reg("rax");
+    return;
+  }
   switch (node->kind) {
     case ND_LVAR:
       mov_reg_to_reg("rax", "rbp");
-      printf("  sub rax, %d\n", node->offset);
+      printf("  sub rax, %d\n", node->var->offset);
       if (node->type->kind == T_ADDR) {
         lea_reg_to_mem("rax", "rax");
       }
@@ -127,8 +132,8 @@ void gen(Node *node) {
       for (int i = 0; i < node->args->length; i++) {
         char *reg = caller_regs[i];
         if (reg == NULL) error("exhausted register");
-        printf("  mov -%d[rbp], %s\n", ((Node *)node->args->data[i])->offset,
-               reg);
+        printf("  mov -%d[rbp], %s\n",
+               ((Node *)node->args->data[i])->var->offset, reg);
         push_reg(reg);
       }
       gen(node->body);
@@ -187,4 +192,11 @@ void gen(Node *node) {
       break;
   }
   push_reg("rax");
+}
+void gen_global(void) {
+  for (int i = 0; i < globals->keys->length; i++) {
+    LVar *grob = (LVar *)globals->vals->data[i];
+    printf("%s:\n", grob->name);
+    printf("  .zero %d\n", grob->type->offset);
+  }
 }

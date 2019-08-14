@@ -1,10 +1,12 @@
 #include "comcom.h"
 
 LVar *find_lvar(char *str, int len);
-static void set_lvar(Node *node, char *name, int length, int offset);
+static LVar *set_lvar(Node *node, char *name, int length, int offset);
+static LVar *set_global(Node *node, char *name, int length);
 static Type *walk(Node *node);
 static int check_size(Type *type);
 void semantic(void) {
+  globals = new_map();
   for (int i = 0; i < 100; i++) {
     Node *node = code[i];
     if (node == NULL) {
@@ -16,13 +18,18 @@ void semantic(void) {
 static Type *walk(Node *node) {
   if (node == NULL) return NULL;
   switch (node->kind) {
+    case ND_GLOBAL: {
+      LVar *lvar = find_lvar(node->name, strlen(node->name));
+      node->type = lvar->type;
+      return node->type;
+    } break;
     case ND_FUNC:
       locals = NULL;
       for (int i = 0; i < node->args->length; i++) {
         Node *arg = (Node *)node->args->data[i];
-        set_lvar(arg, arg->name, strlen(arg->name), arg->type->offset);
-        LVar *var = find_lvar(arg->name, strlen(arg->name));
-        var->type = arg->type;
+        arg->var =
+            set_lvar(arg, arg->name, strlen(arg->name), arg->type->offset);
+        arg->var->type = arg->type;
         walk(arg);
       }
       walk(node->body);
@@ -36,15 +43,26 @@ static Type *walk(Node *node) {
     case ND_DEC: {
       Type *type = node->lhs->type;
       node->rhs->type = type;
-      if (node->rhs->type->kind == T_ARRAY) {
-        set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
-                 check_size(node->rhs->type));
+      if (node->rhs->kind == ND_GLOBAL) {
+        if (node->rhs->type->kind == T_ARRAY) {
+          node->rhs->var =
+              set_global(node->rhs, node->rhs->name, strlen(node->rhs->name));
+        } else {
+          node->rhs->var =
+              set_global(node->rhs, node->rhs->name, strlen(node->rhs->name));
+        }
+        node->rhs->var->is_gvar = true;
       } else {
-        set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
-                 type->offset);
+        if (node->rhs->type->kind == T_ARRAY) {
+          node->rhs->var =
+              set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
+                       check_size(node->rhs->type));
+        } else {
+          node->rhs->var = set_lvar(node->rhs, node->rhs->name,
+                                    strlen(node->rhs->name), type->offset);
+        }
       }
-      LVar *lvar = find_lvar(node->rhs->name, strlen(node->rhs->name));
-      lvar->type = type;
+      node->rhs->var->type = type;
       return type;
     } break;
     case ND_ASSIGN:
@@ -78,8 +96,11 @@ static Type *walk(Node *node) {
       return new_type(T_INT, NULL);
       break;
     case ND_LVAR: {
-      LVar *lvar = find_lvar(node->name, strlen(node->name));
-      node->offset = lvar->offset;
+      LVar *lvar;
+      lvar = find_lvar(node->name, strlen(node->name));
+      if (!lvar) lvar = (LVar *)map_get(globals, node->name);
+
+      node->var = lvar;
       node->type = lvar->type;
       return node->type;
     } break;
@@ -91,7 +112,6 @@ static Type *walk(Node *node) {
     }
     case ND_DEREF: {
       Type *content = walk(node->lhs);
-      node->offset = node->lhs->offset;
       node->type = content->ptr_to;
       return node->type;
     } break;
@@ -132,19 +152,28 @@ LVar *find_lvar(char *str, int len) {
   }
   return NULL;
 }
-static void set_lvar(Node *node, char *name, int length, int offset) {
-  node->kind = ND_LVAR;
+static LVar *set_lvar(Node *node, char *name, int length, int offset) {
   LVar *lvar = calloc(1, sizeof(LVar));
   if (locals) lvar->next = locals;
   lvar->name = name;
   lvar->len = length;
   if (locals)
     lvar->offset = locals->offset + offset;
-  else {
+  else
     lvar->offset = offset;
-  }
-  node->offset = lvar->offset;
+  lvar->is_gvar = false;
+  lvar->type = node->type;
   locals = lvar;
+  return lvar;
+}
+static LVar *set_global(Node *node, char *name, int length) {
+  LVar *lvar = calloc(1, sizeof(LVar));
+  lvar->name = name;
+  lvar->len = length;
+  lvar->is_gvar = true;
+  lvar->type = node->type;
+  map_put(globals, name, (void *)lvar);
+  return lvar;
 }
 static int check_size(Type *type) {
   switch (type->kind) {
@@ -161,5 +190,9 @@ static int check_size(Type *type) {
       return type->ary_size * offset;
       break;
     }
+    default:
+      fprintf(stderr, "unexpected type\n");
+      return -42;
+      break;
   }
 }

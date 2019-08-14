@@ -15,8 +15,11 @@ int main(int argc, char **argv) {
   program();
   semantic();
 
-  printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
+  printf("  .intel_syntax noprefix\n");
+  printf("  .data\n");
+  gen_global();
+  printf("  .text\n");
+  printf("  .global main\n");
 
   for (int i = 0; code[i]; i++) {
     gen(code[i]);
