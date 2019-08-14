@@ -18,8 +18,7 @@ static void lea_reg_to_mem(char *dst, char *src) {
 }
 static void gen_lval(Node *node) {
   if (node->var && node->var->is_gvar) {
-    printf("  lea rax, %s\n", node->name);
-    push_reg("rax");
+    printf("  push offset %s\n", node->name);
     return;
   }
   switch (node->kind) {

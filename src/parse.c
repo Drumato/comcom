@@ -301,6 +301,10 @@ static Node *toplevel(void) {
     node = func(node);
   } else {
     node = global(node, type);
+    if (node->rhs->expr != NULL) {
+      node->lhs->type = new_type(T_ARRAY, node->lhs->type);
+      node->lhs->type->ary_size = node->rhs->expr->val;
+    }
     if (!consume(";")) error("'%s' is not ';'", token->str);
   }
   return node;

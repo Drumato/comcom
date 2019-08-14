@@ -66,7 +66,7 @@ try 1 'int main(){int a[2]; a[0] = 1; a[1] = 2; return a[0];}'
 try 2 'int main(){int a[2]; a[0] = 1; a[1] = 2; return a[1];}'
 try 3 'int main(){int a[2]; a[0] = 1; a[1] = 2; return a[0]+a[1];}'
 try 30 'int a; int main(){ a = 30; return a;}'
-#try 60 'int a[2]; int main(){ a[1] = 60; return a[1];}'
+try 60 'int a[2]; int main(){ a[1] = 60; return a[1];}'
 echo -e "\e[33mAll Test Passed.\e[0m"
 
 rake clean
