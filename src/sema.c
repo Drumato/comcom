@@ -38,7 +38,7 @@ static Type *walk(Node *node) {
       node->rhs->type = type;
       if (node->rhs->type->kind == T_ARRAY) {
         set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
-                 type->ary_size * type->ptr_to->offset);
+                 check_size(node->rhs->type));
       } else {
         set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
                  type->offset);
@@ -146,15 +146,16 @@ static void set_lvar(Node *node, char *name, int length, int offset) {
   node->offset = lvar->offset;
   locals = lvar;
 }
-
 static int check_size(Type *type) {
   switch (type->kind) {
-    case T_INT:
+    case T_INT: {
       return 8;
       break;
-    case T_ADDR:
+    }
+    case T_ADDR: {
       return 8;
       break;
+    }
     case T_ARRAY: {
       int offset = check_size(type->ptr_to);
       return type->ary_size * offset;
