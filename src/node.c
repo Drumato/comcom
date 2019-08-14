@@ -32,7 +32,7 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
   int offset;
   switch (kind) {
     case T_INT: {
-      offset = 4;
+      offset = 8;
       break;
     }
     case T_ADDR:

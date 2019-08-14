@@ -17,7 +17,6 @@ static void lea_reg_to_mem(char *dst, char *src) {
   printf("  lea %s, [%s]\n", dst, src);
 }
 static void gen_lval(Node *node) {
-  fprintf(stderr, "lval_type->%s\n", type_string(node->type));
   mov_reg_to_reg("rax", "rbp");
   printf("  sub rax, %d\n", node->offset);
   if (node->type->kind == T_ADDR) {
@@ -111,14 +110,13 @@ void gen(Node *node) {
       printf("%s:\n", node->name);
       push_reg("rbp");
       mov_reg_to_reg("rbp", "rsp");
-      if (!strncmp(node->name, "main", 4)) printf("  sub rsp, 208\n");
+      if (node->locals && node->locals->offset != 0)
+        printf("  sub rsp, %d\n", node->locals->offset);
       for (int i = 0; i < node->args->length; i++) {
         char *reg = caller_regs[i];
         if (reg == NULL) error("exhausted register");
-        push_reg(reg);
-        gen_lval((Node *)node->args->data[i]);
-        pop_reg("rax");
-        pop_reg(reg);
+        printf("  mov -%d[rbp], %s\n", ((Node *)node->args->data[i])->offset,
+               reg);
         push_reg(reg);
       }
       gen(node->body);
@@ -133,12 +131,6 @@ void gen(Node *node) {
       push_reg("rax");
       return;
     case ND_DEC:
-      if (node->lhs->type->kind == T_ARRAY) {
-        mov_reg_to_reg("rax", "rbp");
-        printf("  sub rax, %ld\n",
-               node->rhs->type->ary_size * node->rhs->type->offset);
-        push_reg("rax");
-      }
       return;
     default:
       break;
