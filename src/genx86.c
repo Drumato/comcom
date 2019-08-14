@@ -1,6 +1,9 @@
 #include "comcom.h"
 
-char *caller_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL};
+char *caller_regs64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL};
+char *caller_regs32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d", NULL};
+char *caller_regs16[] = {"di", "si", "dx", "cx", "r8w", "r9w", NULL};
+char *caller_regs8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b", NULL};
 int label = 1;
 static void push_reg(char *reg) { printf("  push %s\n", reg); }
 static void push_const(int val) { printf("  push %d\n", val); }
@@ -72,7 +75,7 @@ void gen(Node *node) {
       for (int i = 0; i < node->args->length; i++)
         gen((Node *)node->args->data[i]);
       for (int i = 0; i < node->args->length; i++) {
-        char *reg = caller_regs[i];
+        char *reg = caller_regs64[i];
         if (reg == NULL) error("exhausted register");
         pop_reg(reg);
       }
@@ -105,7 +108,11 @@ void gen(Node *node) {
       gen_lval(node);
       if (node->type->kind != T_ARRAY) {
         pop_reg("rax");
-        printf("  mov rax, [rax]\n");
+        if (node->type->kind == T_CHAR) {
+          printf("  movsx rax, BYTE PTR [rax]\n");
+        } else {
+          printf("  mov rax, QWORD PTR [rax]\n");
+        }
         push_reg("rax");
       }
       return;
@@ -114,7 +121,11 @@ void gen(Node *node) {
       gen(node->rhs);
       pop_reg("rdi");
       pop_reg("rax");
-      printf("  mov [rax],rdi\n");
+      if (node->lhs->type->kind == T_CHAR) {
+        printf("  mov [rax], dil\n");
+      } else {
+        printf("  mov [rax],rdi\n");
+      }
       push_reg("rdi");
       return;
     case ND_BLOCK:
@@ -126,10 +137,13 @@ void gen(Node *node) {
       printf("%s:\n", node->name);
       push_reg("rbp");
       mov_reg_to_reg("rbp", "rsp");
-      if (node->locals && node->locals->offset != 0)
+      if (node->locals && node->locals->offset != 0) {
+        node->locals->offset += 7;
+        node->locals->offset &= ~7;
         printf("  sub rsp, %d\n", node->locals->offset);
+      }
       for (int i = 0; i < node->args->length; i++) {
-        char *reg = caller_regs[i];
+        char *reg = caller_regs64[i];
         if (reg == NULL) error("exhausted register");
         printf("  mov -%d[rbp], %s\n",
                ((Node *)node->args->data[i])->var->offset, reg);
@@ -142,8 +156,13 @@ void gen(Node *node) {
       return;
     case ND_DEREF:
       gen(node->lhs);
+
       printf("  pop rax\n");
-      printf("  mov rax, [rax]\n");
+      if (node->lhs->type->kind == T_CHAR) {
+        printf("  movzx rax, BYTE PTR [rax]\n");
+      } else {
+        printf("  mov rax, QWORD PTR [rax]\n");
+      }
       push_reg("rax");
       return;
     case ND_DEC:
@@ -158,7 +177,8 @@ void gen(Node *node) {
   switch (node->kind) {
     case ND_ADD:
       if (node->lhs->type->kind == T_ADDR || node->lhs->type->kind == T_ARRAY) {
-        printf("  imul rdi, %d\n", node->lhs->type->offset);
+        // printf("  imul rdi, %d\n", node->lhs->type->offset);
+        printf("  imul rdi, %d\n", node->type->offset);
       }
       printf("  add rax, rdi\n");
       break;

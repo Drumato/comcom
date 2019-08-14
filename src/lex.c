@@ -8,10 +8,10 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int length) {
   return tok;
 }
 static Token *multilength(char *p, Token *cur) {
-  char *keywords[] = {"return", "if",  "else",   "while",
-                      "for",    "int", "sizeof", NULL};
-  TokenKind tk_kinds[] = {TK_RETURN, TK_IF,  TK_ELSE,  TK_WHILE,
-                          TK_FOR,    TK_INT, TK_SIZEOF};
+  char *keywords[] = {"return", "if",   "else",   "while", "for",
+                      "int",    "char", "sizeof", NULL};
+  TokenKind tk_kinds[] = {TK_RETURN, TK_IF,  TK_ELSE, TK_WHILE,
+                          TK_FOR,    TK_INT, TK_CHAR, TK_SIZEOF};
   for (int i = 0; keywords[i] != NULL; i++) {
     if (!strncmp(p, keywords[i], strlen(keywords[i])) &&
         !isalnum(p[strlen(keywords[i])]))

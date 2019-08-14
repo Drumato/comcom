@@ -19,6 +19,8 @@ Node *new_node_type(Token *tok) {
   Type *type = NULL;
   if (!strncmp("int", tok->str, 3)) {
     type = new_type(T_INT, NULL);
+  } else if (!strncmp("char", tok->str, 4)) {
+    type = new_type(T_CHAR, NULL);
   }
   while (tok->ptr_to != NULL) {
     type = new_type(T_ADDR, type);
@@ -33,6 +35,10 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
   switch (kind) {
     case T_INT: {
       offset = 8;
+      break;
+    }
+    case T_CHAR: {
+      offset = 1;
       break;
     }
     case T_ADDR:
@@ -53,24 +59,30 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
 }
 
 Type *inference_type(Token *tok) {
-  Type *type = new_type(T_INT, NULL);
-  if ((tok->kind != TK_INT || strlen("int") != tok->len ||
-       memcmp(tok->str, "int", tok->len))) {
-    while (tok->ptr_to != NULL) {
-      type = new_type(T_ADDR, type);
-      tok = tok->ptr_to;
-    }
+  Type *type;
+  if (tok->kind == TK_INT && strlen("int") == tok->len &&
+      !memcmp(tok->str, "int", tok->len)) {
+    type = new_type(T_INT, NULL);
+  } else if (tok->kind == TK_CHAR && strlen("char") == tok->len &&
+             !memcmp(tok->str, "char", tok->len)) {
+    type = new_type(T_CHAR, NULL);
+  }
+  while (tok->ptr_to != NULL) {
+    type = new_type(T_ADDR, type);
+    tok = tok->ptr_to;
   }
   return type;
 }
 
 char *type_string(Type *type) {
   if (type == NULL) {
-    return "";
+    return "None";
   }
   switch (type->kind) {
     case T_INT:
       return "Integer";
+    case T_CHAR:
+      return "Char";
     case T_ADDR:
       return format("address_of -> %s", type_string(type->ptr_to));
     case T_ARRAY:

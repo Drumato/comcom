@@ -27,11 +27,16 @@ static Token *ptr_to(Token *tok) {
   return token;
 }
 static Token *consume_type(void) {
-  if ((token->kind != TK_INT || strlen("int") != token->len ||
-       memcmp(token->str, "int", token->len)))
-    return NULL;
-  Token *tok = token;
-  token = token->next;
+  Token *tok = NULL;
+  if ((token->kind == TK_INT && strlen("int") == token->len &&
+       !memcmp(token->str, "int", token->len))) {
+    tok = token;
+    token = token->next;
+  } else if ((token->kind == TK_CHAR && strlen("char") == token->len &&
+              !memcmp(token->str, "char", token->len))) {
+    tok = token;
+    token = token->next;
+  }
   return tok;
 }
 static bool consume_block(void) {

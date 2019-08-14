@@ -125,7 +125,10 @@ static Type *walk(Node *node) {
     default:
       node->lhs->type = walk(node->lhs);
       node->rhs->type = walk(node->rhs);
-      if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_INT) {
+      if (node->lhs->type->kind == T_CHAR) {
+        node->type = new_type(T_CHAR, NULL);
+      } else if (node->lhs->type->kind == T_INT &&
+                 node->rhs->type->kind == T_INT) {
         node->type = new_type(T_INT, NULL);
       } else if ((node->lhs->type->kind == T_ADDR ||
                   node->lhs->type->kind == T_ARRAY) &&
@@ -188,6 +191,10 @@ static int check_size(Type *type) {
     case T_ARRAY: {
       int offset = check_size(type->ptr_to);
       return type->ary_size * offset;
+      break;
+    }
+    case T_CHAR: {
+      return 1;
       break;
     }
     default:

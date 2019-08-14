@@ -69,6 +69,7 @@ typedef enum {
   TK_NUM,
   TK_RETURN,
   TK_INT,
+  TK_CHAR,
   TK_IF,
   TK_ELSE,
   TK_WHILE,
@@ -138,6 +139,7 @@ typedef enum {
 
 typedef enum {
   T_INT,
+  T_CHAR,
   T_ADDR,
   T_ARRAY,
 } TypeKind;
