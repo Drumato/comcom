@@ -50,6 +50,14 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    if (*p == '\'') {
+      p++;
+      cur = new_token(TK_NUM, cur, p, 0);
+      cur->val = *p;
+      p++;
+      p++;
+      continue;
+    }
     if (strchr("+-*/[]{}()<>=!;,&", *p) != NULL) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
