@@ -82,7 +82,7 @@ static void set_lvar(Node *node, char *name, int length) {
   if (locals) lvar->next = locals;
   lvar->name = name;
   lvar->len = length;
-  if (locals) lvar->offset = locals->offset + 8;
+  if (locals) lvar->offset = locals->offset;
   node->offset = lvar->offset;
   locals = lvar;
 }
@@ -273,6 +273,7 @@ static Node *stmt(void) {
   return node;
 }
 static Node *func(void) {
+  locals = NULL;
   Node *node = calloc(1, sizeof(Node));
   Token *tok;
   if (consume_type() == NULL) {
@@ -314,6 +315,14 @@ static Node *func(void) {
     }
   }
   node->body = stmt();
+  node->locals = locals;
+  for (LVar *var = locals; var; var = var->next) {
+    fprintf(stderr, "lvar->name %s offset->%d\n", var->name, var->offset);
+    if (var->next == NULL) {
+      node->offset = var->offset;
+      break;
+    }
+  }
   return node;
 }
 void program(void) {

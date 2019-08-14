@@ -166,6 +166,7 @@ struct Node {
   char *name;    // function names
   int val;       // integer-value for integer
   int offset;    // stack-offset for local variables
+  LVar *locals;
 };
 char *nk_string(NodeKind nk);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);

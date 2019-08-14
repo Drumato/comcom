@@ -17,6 +17,7 @@ static void lea_reg_to_mem(char *dst, char *src) {
   printf("  lea %s, [%s]\n", dst, src);
 }
 static void gen_lval(Node *node) {
+  fprintf(stderr, "lval_type->%s\n", type_string(node->type));
   mov_reg_to_reg("rax", "rbp");
   printf("  sub rax, %d\n", node->offset);
   if (node->type->kind == T_ADDR) {

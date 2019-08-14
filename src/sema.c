@@ -100,6 +100,10 @@ static Type *walk(Node *node) {
           node->val = 8;
           break;
         }
+        case T_ARRAY: {
+          node->val = node->expr->type->ary_size * node->expr->type->offset;
+          break;
+        }
       }
       return node->type;
     } break;
