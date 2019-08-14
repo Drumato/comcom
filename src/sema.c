@@ -3,6 +3,7 @@
 LVar *find_lvar(char *str, int len);
 static void set_lvar(Node *node, char *name, int length, int offset);
 static Type *walk(Node *node);
+static int check_size(Type *type);
 void semantic(void) {
   for (int i = 0; i < 100; i++) {
     Node *node = code[i];
@@ -37,7 +38,7 @@ static Type *walk(Node *node) {
       node->rhs->type = type;
       if (node->rhs->type->kind == T_ARRAY) {
         set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
-                 type->ary_size * type->ptr_to->offset);
+                 check_size(node->rhs->type));
       } else {
         set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
                  type->offset);
@@ -90,6 +91,7 @@ static Type *walk(Node *node) {
     }
     case ND_DEREF: {
       Type *content = walk(node->lhs);
+      node->offset = node->lhs->offset;
       node->type = content->ptr_to;
       return node->type;
     } break;
@@ -97,20 +99,7 @@ static Type *walk(Node *node) {
       Type *content = walk(node->expr);
       node->type = new_type(T_INT, NULL);
       node->kind = ND_NUM;
-      switch (content->kind) {
-        case T_INT: {
-          node->val = 8;
-          break;
-        }
-        case T_ADDR: {
-          node->val = 8;
-          break;
-        }
-        case T_ARRAY: {
-          node->val = node->expr->type->ary_size * node->expr->type->offset;
-          break;
-        }
-      }
+      node->val = check_size(content);
       return node->type;
     } break;
     default:
@@ -118,7 +107,8 @@ static Type *walk(Node *node) {
       node->rhs->type = walk(node->rhs);
       if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_INT) {
         node->type = new_type(T_INT, NULL);
-      } else if (node->lhs->type->kind == T_ADDR &&
+      } else if ((node->lhs->type->kind == T_ADDR ||
+                  node->lhs->type->kind == T_ARRAY) &&
                  node->rhs->type->kind == T_INT) {
         node->type = new_type(T_ADDR, node->lhs->type->ptr_to);
         if (node->kind == ND_ADD) {
@@ -155,4 +145,21 @@ static void set_lvar(Node *node, char *name, int length, int offset) {
   }
   node->offset = lvar->offset;
   locals = lvar;
+}
+static int check_size(Type *type) {
+  switch (type->kind) {
+    case T_INT: {
+      return 8;
+      break;
+    }
+    case T_ADDR: {
+      return 8;
+      break;
+    }
+    case T_ARRAY: {
+      int offset = check_size(type->ptr_to);
+      return type->ary_size * offset;
+      break;
+    }
+  }
 }
