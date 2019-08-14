@@ -17,12 +17,22 @@ static void lea_reg_to_mem(char *dst, char *src) {
   printf("  lea %s, [%s]\n", dst, src);
 }
 static void gen_lval(Node *node) {
-  mov_reg_to_reg("rax", "rbp");
-  printf("  sub rax, %d\n", node->offset);
-  if (node->type->kind == T_ADDR) {
-    lea_reg_to_mem("rax", "rax");
+  switch (node->kind) {
+    case ND_LVAR:
+      mov_reg_to_reg("rax", "rbp");
+      printf("  sub rax, %d\n", node->offset);
+      if (node->type->kind == T_ADDR) {
+        lea_reg_to_mem("rax", "rax");
+      }
+      push_reg("rax");
+      break;
+    case ND_DEREF:
+      gen(node->lhs);
+      break;
+    default:
+      fprintf(stderr, "unexpected node\n");
+      break;
   }
-  push_reg("rax");
   return;
 }
 void gen(Node *node) {
@@ -89,9 +99,11 @@ void gen(Node *node) {
       return;
     case ND_LVAR:
       gen_lval(node);
-      pop_reg("rax");
-      printf("  mov rax, [rax]\n");
-      push_reg("rax");
+      if (node->type->kind != T_ARRAY) {
+        pop_reg("rax");
+        printf("  mov rax, [rax]\n");
+        push_reg("rax");
+      }
       return;
     case ND_ASSIGN:
       gen_lval(node->lhs);
@@ -141,13 +153,13 @@ void gen(Node *node) {
   pop_reg("rax");
   switch (node->kind) {
     case ND_ADD:
-      if (node->lhs->type->kind == T_ADDR) {
+      if (node->lhs->type->kind == T_ADDR || node->lhs->type->kind == T_ARRAY) {
         printf("  imul rdi, %d\n", node->lhs->type->offset);
       }
       printf("  add rax, rdi\n");
       break;
     case ND_SUB:
-      if (node->lhs->type->kind == T_ADDR) {
+      if (node->lhs->type->kind == T_ADDR || node->lhs->type->kind == T_ARRAY) {
         printf("  imul rdi, %d\n", node->lhs->type->offset);
       }
       printf("  sub rax, rdi\n");
