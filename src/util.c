@@ -162,3 +162,10 @@ void error(char *fmt, ...) {
   fprintf(stderr, "\n");
   exit(1);
 }
+
+void warning(char *message) {
+  fprintf(stderr, "%s%s%s%s\n", STRONG, RED, message, CLEAR);
+}
+void info(char *message) {
+  fprintf(stderr, "%s%s%s%s\n", STRONG, GREEN, message, CLEAR);
+}

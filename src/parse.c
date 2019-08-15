@@ -17,6 +17,7 @@ static char *scopy(char *src, char *dst, int length) {
   src = (char *)malloc(length * sizeof(char));
   strncpy(src, dst, length);
   src[length] = '\0';
+  assert(length == strlen(src));
   return src;
 }
 static Token *ptr_to(Token *tok) {
@@ -79,6 +80,12 @@ static Node *declare(Node *node) {
   }
   return node;
 }
+static Node *parse_ident(Token *tok) {
+  Node *ident = (Node *)calloc(1, sizeof(Node));
+  ident->kind = ND_LVAR;
+  ident->name = scopy(ident->name, tok->str, tok->len);
+  return ident;
+}
 
 static bool at_eof() { return token->kind == TK_EOF; }
 static Node *member(void) {
@@ -86,9 +93,7 @@ static Node *member(void) {
   Token *type = consume_type();
   while (consume("*")) type = ptr_to(type);
   Token *tok = consume_ident();
-  Node *ident = (Node *)calloc(1, sizeof(Node));
-  ident->kind = ND_LVAR;
-  ident->name = scopy(ident->name, tok->str, tok->len);
+  Node *ident = parse_ident(tok);
   ident = declare(ident);
   node = new_node(ND_MEMBER, new_node_type(type), ident);
   if (ident->expr != NULL) {
@@ -137,9 +142,7 @@ static Node *term(void) {
   }
   if (consume_type() != NULL) {
     tok = consume_ident();
-    Node *node = (Node *)calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
-    node->name = scopy(node->name, tok->str, tok->len);
+    Node *node = parse_ident(tok);
     return node;
   }
   if ((tok = consume_str()) != NULL) {
@@ -234,9 +237,7 @@ static Node *stmt(void) {
   } else if ((type = consume_type()) != NULL) {
     while (consume("*")) type = ptr_to(type);
     Token *tok = consume_ident();
-    Node *ident = (Node *)calloc(1, sizeof(Node));
-    ident->kind = ND_LVAR;
-    ident->name = scopy(ident->name, tok->str, tok->len);
+    Node *ident = parse_ident(tok);
     ident = declare(ident);
     node = new_node(ND_DEC, new_node_type(type), ident);
     if (ident->expr != NULL) {
@@ -310,9 +311,7 @@ static Node *func(Node *node) {
     Token *type = consume_type();
     while (consume("*")) type = ptr_to(type);
     Token *tok = consume_ident();
-    arg = (Node *)calloc(1, sizeof(Node));
-    arg->kind = ND_LVAR;
-    arg->name = scopy(arg->name, tok->str, tok->len);
+    arg = parse_ident(tok);
     arg->type = inference_type(type);
     ary_push(node->args, (void *)arg);
     for (;;) {
@@ -323,9 +322,7 @@ static Node *func(Node *node) {
       Token *type = consume_type();
       while (consume("*")) type = ptr_to(type);
       Token *tok = consume_ident();
-      arg = (Node *)calloc(1, sizeof(Node));
-      arg->kind = ND_LVAR;
-      arg->name = scopy(arg->name, tok->str, tok->len);
+      arg = parse_ident(tok);
       arg->type = inference_type(type);
       ary_push(node->args, (void *)arg);
     }
@@ -352,11 +349,17 @@ static Node *toplevel(void) {
   node->name = scopy(node->name, tok->str, tok->len);
   if (consume("(")) {
     node = func(node);
+    if (node->kind != ND_FUNC) {
+      error("expected declaration func");
+    }
   } else {
     node = global(node, type);
     if (node->rhs->expr != NULL) {
       node->lhs->type = new_type(T_ARRAY, node->lhs->type);
       node->lhs->type->ary_size = node->rhs->expr->val;
+    }
+    if (node->kind != ND_DEC || node->rhs->kind != ND_GLOBAL) {
+      error("expected declaration global-var");
     }
     if (!consume(";")) error("'%s' is not ';'", token->str);
   }

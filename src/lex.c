@@ -42,8 +42,8 @@ Token *tokenize(char *p) {
       continue;
     }
     if (isalpha(*p)) {
-      p++;
       char *start = p;
+      p++;
       while (isalpha(*p) || isdigit(*p) || *p == '_') {
         p++;
       }
@@ -54,8 +54,7 @@ Token *tokenize(char *p) {
       p++;
       cur = new_token(TK_NUM, cur, p, 1);
       cur->val = *p;
-      p++;
-      p++;
+      p += 2;
       continue;
     }
     if (strncmp(p, "//", 2) == 0) {
@@ -68,7 +67,7 @@ Token *tokenize(char *p) {
     if (strncmp(p, "/*", 2) == 0) {
       char *q = strstr(p + 2, "*/");
       if (!q) {
-        fprintf(stderr, "unclosing comment\n");
+        warning("unclonsing comment found.");
       }
       p = q + 2;
       continue;
@@ -79,7 +78,7 @@ Token *tokenize(char *p) {
       char *start = p;
       while (*p != '"') {
         if (p == NULL) {
-          fprintf(stderr, "invalid pointer\n");
+          warning("invalid pointer");
         }
         p++;
       }
@@ -93,14 +92,25 @@ Token *tokenize(char *p) {
     }
 
     if (isdigit(*p)) {
+      int base = 10;
+      if (!strncmp(p, "0b", 2)) {
+        base = 2;
+        p += 2;
+      } else if (!strncmp(p, "0x", 2)) {
+        base = 16;
+        p += 2;
+      } else if (!strncmp(p, "0", 1)) {
+        base = 8;
+        p++;
+      }
       cur = new_token(TK_NUM, cur, p, 0);
       char *start = p;
-      cur->val = strtol(p, &p, 10);
+      cur->val = strtol(p, &p, base);
       cur->len = p - start;
       continue;
     }
 
-    error("can't tokenize");
+    warning("unable to tokenize");
   }
 
   new_token(TK_EOF, cur, p, 0);

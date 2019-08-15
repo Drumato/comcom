@@ -205,3 +205,5 @@ void gen(Node *node);
 void gen_global(void);
 void gen_strings(void);
 
+void warning(char *message);
+void info(char *message);
