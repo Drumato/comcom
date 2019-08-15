@@ -52,7 +52,12 @@ static Token *consume_ident(void) {
   token = token->next;
   return tok;
 }
-
+static Token *consume_str(void) {
+  if (token->kind != TK_STR) return NULL;
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
 static void expect(char *op) {
   if ((token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len)))
@@ -115,6 +120,13 @@ static Node *term(void) {
     Node *node = (Node *)calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
     node->name = scopy(node->name, tok->str, tok->len);
+    return node;
+  }
+  if ((tok = consume_str()) != NULL) {
+    Node *node = (Node *)calloc(1, sizeof(Node));
+    node->kind = ND_STR;
+    node->name = scopy(node->name, tok->str, tok->len);
+    ary_push(strings, (void *)node->name);
     return node;
   }
   if (consume("(")) {
@@ -315,6 +327,7 @@ static Node *toplevel(void) {
   return node;
 }
 void program(void) {
+  strings = new_ary();
   int i = 0;
   while (!at_eof()) code[i++] = toplevel();
   code[i] = NULL;

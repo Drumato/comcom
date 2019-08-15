@@ -49,16 +49,44 @@ Token *tokenize(char *p) {
       cur = new_token(TK_IDENT, cur, start, p - start);
       continue;
     }
-
     if (*p == '\'') {
       p++;
-      cur = new_token(TK_NUM, cur, p, 0);
+      cur = new_token(TK_NUM, cur, p, 1);
       cur->val = *p;
       p++;
       p++;
       continue;
     }
-    if (strchr("+-*/[]{}()<>=!;,&", *p) != NULL) {
+    if (strncmp(p, "//", 2) == 0) {
+      p += 2;
+      while (*p != '\n') {
+        p++;
+      }
+      continue;
+    }
+    if (strncmp(p, "/*", 2) == 0) {
+      char *q = strstr(p + 2, "*/");
+      if (!q) {
+        fprintf(stderr, "unclosing comment\n");
+      }
+      p = q + 2;
+      continue;
+    }
+    // " fjkdlsajfkldsa "
+    if (*p == '"') {
+      p++;
+      char *start = p;
+      while (*p != '"') {
+        if (p == NULL) {
+          fprintf(stderr, "invalid pointer\n");
+        }
+        p++;
+      }
+      cur = new_token(TK_STR, cur, start, p - start);
+      p++;
+      continue;
+    }
+    if (strchr("+-*/[]{}()<>=!;,&\"", *p) != NULL) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }

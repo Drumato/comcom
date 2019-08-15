@@ -68,6 +68,10 @@ static Type *walk(Node *node) {
     case ND_ASSIGN:
       node->lhs->type = walk(node->lhs);
       node->rhs->type = walk(node->rhs);
+      if (node->rhs->type->kind == T_ARRAY &&
+          node->rhs->type->ptr_to->kind == T_CHAR) {
+        node->lhs->val = ary_check(strings, node->rhs->name);
+      }
       break;  // check type in future
     case ND_CALL:
       for (int i = 0; i < node->args->length; i++) {
@@ -92,6 +96,12 @@ static Type *walk(Node *node) {
       node->lhs->type = walk(node->lhs);
       return node->lhs->type;
       break;  // check type in future
+    case ND_STR: {
+      Type *type = new_type(T_ARRAY, NULL);
+      type->ptr_to = new_type(T_CHAR, NULL);
+      type->ary_size = strlen(node->name);
+      return type;
+    } break;
     case ND_NUM:
       return new_type(T_INT, NULL);
       break;

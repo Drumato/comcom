@@ -7,6 +7,7 @@ char *caller_regs8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b", NULL};
 int label = 1;
 static void push_reg(char *reg) { printf("  push %s\n", reg); }
 static void push_const(int val) { printf("  push %d\n", val); }
+static void push_string(int val) { printf("  push offset .LS%d\n", val); }
 static void pop_reg(char *reg) { printf("  pop %s\n", reg); }
 static void mov_reg_to_reg(char *dst, char *src) {
   printf("  mov %s, %s\n", dst, src);
@@ -21,7 +22,7 @@ static void lea_reg_to_mem(char *dst, char *src) {
 }
 static void gen_lval(Node *node) {
   if (node->var && node->var->is_gvar) {
-    printf("  push offset %s\n", node->name);
+    printf("  push offset .%s\n", node->name);
     return;
   }
   switch (node->kind) {
@@ -39,6 +40,11 @@ static void gen_lval(Node *node) {
     default:
       fprintf(stderr, "unexpected node\n");
       break;
+  }
+  if (node->var && node->var->type->kind == T_ADDR &&
+      node->var->type->ptr_to->kind == T_CHAR) {
+    printf("  lea rax, .LS%d\n", node->val);
+    push_reg("rax");
   }
   return;
 }
@@ -103,6 +109,9 @@ void gen(Node *node) {
       return;
     case ND_NUM:
       push_const(node->val);
+      return;
+    case ND_STR:
+      push_string(ary_check(strings, node->name));
       return;
     case ND_LVAR:
       gen_lval(node);
@@ -215,7 +224,14 @@ void gen(Node *node) {
 void gen_global(void) {
   for (int i = 0; i < globals->keys->length; i++) {
     LVar *grob = (LVar *)globals->vals->data[i];
-    printf("%s:\n", grob->name);
+    printf(".%s:\n", grob->name);
     printf("  .zero %d\n", grob->type->offset);
+  }
+}
+void gen_strings(void) {
+  for (int i = 0; i < strings->length; i++) {
+    char *strlit = (char *)strings->data[i];
+    printf(".LS%d:\n", i);
+    printf("  .string \"%s\"\n", strlit);
   }
 }

@@ -1,6 +1,6 @@
 require 'rake/clean'
 task default: :comcom
-["*.o","src/*.o","comcom","core","*.txt","a.out","*.s"].each do |f|
+["*.o","src/*.o","comcom","core","tmp","*.txt","a.out","*.s"].each do |f|
   CLEAN.include f
 
 end

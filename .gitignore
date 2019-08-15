@@ -58,3 +58,4 @@ GTAGS
 GRTAGS
 GPATH
 *core*
+*.s

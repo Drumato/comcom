@@ -39,6 +39,7 @@ void *ary_pop(Array *array);
 void ary_set(Array *array, int idx, void *elem);
 void ary_add(Array *array, int idx, void *elem);
 Array *aryget_range(Array *array, int start, int end);
+int ary_check(Array *array, char *val);
 
 typedef struct {
   Array *keys;
@@ -70,6 +71,7 @@ typedef enum {
   TK_RETURN,
   TK_INT,
   TK_CHAR,
+  TK_STR,
   TK_IF,
   TK_ELSE,
   TK_WHILE,
@@ -129,6 +131,7 @@ typedef enum {
   ND_GT,      // <
   ND_GTEQ,    // <=
   ND_NUM,     // integer
+  ND_STR,     // string
   ND_LVAR,    // local variables
   ND_GLOBAL,  // global variables
   ND_BLOCK,   // { stmt* }
@@ -179,6 +182,7 @@ Node *new_node_num(int val);
 Node *new_node_ident(int offset);
 Node *new_node_type(Token *tok);
 Type *inference_type(Token *tok);
+Array *strings;
 
 Node *code[100];
 
@@ -189,4 +193,5 @@ void semantic(void);
 /* genx86.c */
 void gen(Node *node);
 void gen_global(void);
+void gen_strings(void);
 

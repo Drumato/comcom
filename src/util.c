@@ -81,6 +81,13 @@ void ary_push(Array *array, void *elem) {
   if (array->length >= array->capacity) ary_resize(array);
   array->data[array->length++] = elem;
 }
+int ary_check(Array *array, char *val) {
+  int ret_idx = -1;
+  for (int i = 0; i < array->length; i++) {
+    if (!strncmp(val, (char *)array->data[i], strlen(val))) ret_idx = i;
+  }
+  return ret_idx;
+}
 void *ary_pop(Array *array) {
   if (array->length == 0) {
     fprintf(stderr, "invalid access\nnot enough length to pop the value \n");

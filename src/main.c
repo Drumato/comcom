@@ -18,6 +18,8 @@ int main(int argc, char **argv) {
   printf("  .intel_syntax noprefix\n");
   printf("  .data\n");
   gen_global();
+  printf("  .section .rodata\n");
+  gen_strings();
   printf("  .text\n");
   printf("  .global main\n");
 
