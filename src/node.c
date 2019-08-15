@@ -87,6 +87,8 @@ char *type_string(Type *type) {
       return format("address_of -> %s", type_string(type->ptr_to));
     case T_ARRAY:
       return format("array of '%s'", type_string(type->ptr_to));
+    case T_STRUCT:
+      return "Struct";
     default:
       return "";
   }

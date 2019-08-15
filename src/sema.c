@@ -3,6 +3,7 @@
 LVar *find_lvar(char *str, int len);
 static LVar *set_lvar(Node *node, char *name, int length, int offset);
 static LVar *set_global(Node *node, char *name, int length);
+static Type *checktype_declare(Node *node);
 static Type *walk(Node *node);
 static int check_size(Type *type);
 void semantic(void) {
@@ -51,27 +52,7 @@ static Type *walk(Node *node) {
     case ND_DEC: {
       Type *type = node->lhs->type;
       node->rhs->type = type;
-      if (node->rhs->kind == ND_GLOBAL) {
-        if (node->rhs->type->kind == T_ARRAY) {
-          node->rhs->var =
-              set_global(node->rhs, node->rhs->name, strlen(node->rhs->name));
-        } else {
-          node->rhs->var =
-              set_global(node->rhs, node->rhs->name, strlen(node->rhs->name));
-        }
-        node->rhs->var->is_gvar = true;
-      } else {
-        if (node->rhs->type->kind == T_ARRAY) {
-          node->rhs->var =
-              set_lvar(node->rhs, node->rhs->name, strlen(node->rhs->name),
-                       check_size(node->rhs->type));
-        } else {
-          node->rhs->var = set_lvar(node->rhs, node->rhs->name,
-                                    strlen(node->rhs->name), type->offset);
-        }
-      }
-      node->rhs->var->type = type;
-      return type;
+      return checktype_declare(node->rhs);
     } break;
     case ND_ASSIGN:
       node->lhs->type = walk(node->lhs);
@@ -108,7 +89,7 @@ static Type *walk(Node *node) {
     case ND_STR: {
       Type *type = new_type(T_ARRAY, NULL);
       type->ptr_to = new_type(T_CHAR, NULL);
-      type->ary_size = strlen(node->name);
+      type->ary_size = strlen(node->name) + 1;
       return type;
     } break;
     case ND_NUM:
@@ -139,6 +120,21 @@ static Type *walk(Node *node) {
       node->type = new_type(T_INT, NULL);
       node->kind = ND_NUM;
       node->val = check_size(content);
+      return node->type;
+    } break;
+    case ND_MEMBER: {
+      Type *type = node->lhs->type;
+      node->rhs->type = type;
+      return checktype_declare(node->rhs);
+    } break;
+    case ND_STRUCT: {
+      node->type = new_type(T_STRUCT, NULL);
+      node->type->members = new_map();
+      for (int i = 0; i < node->members->length; i++) {
+        Node *member = (Node *)node->members->data[i];
+        member->type = walk(member);
+        map_put(node->type->members, member->rhs->name, member->rhs->type);
+      }
       return node->type;
     } break;
     default:
@@ -221,4 +217,25 @@ static int check_size(Type *type) {
       return -42;
       break;
   }
+}
+
+static Type *checktype_declare(Node *node) {
+  if (node->kind == ND_GLOBAL) {
+    if (node->type->kind == T_ARRAY) {
+      node->var = set_global(node, node->name, strlen(node->name));
+    } else {
+      node->var = set_global(node, node->name, strlen(node->name));
+    }
+    node->var->is_gvar = true;
+  } else {
+    if (node->type->kind == T_ARRAY) {
+      node->var = set_lvar(node, node->name, strlen(node->name),
+                           check_size(node->type));
+    } else {
+      node->var =
+          set_lvar(node, node->name, strlen(node->name), node->type->offset);
+    }
+  }
+  node->var->type = node->type;
+  return node->type;
 }

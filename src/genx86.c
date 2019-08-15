@@ -176,6 +176,8 @@ void gen(Node *node) {
       return;
     case ND_DEC:
       return;
+    case ND_STRUCT:
+      return;
     default:
       break;
   }

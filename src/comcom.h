@@ -77,6 +77,7 @@ typedef enum {
   TK_WHILE,
   TK_FOR,
   TK_SIZEOF,
+  TK_STRUCT,
   TK_ADDR,
   TK_EOF,
 } TokenKind;
@@ -121,6 +122,7 @@ typedef enum {
   ND_ASSIGN,  // =
   ND_DEC,     // int x;
   ND_INIT,    // int x = 0;
+  ND_INLIST,  // {2,3,4,5};
   ND_CALL,    // call-expression
   ND_IF,      // if-stmt
   ND_WHILE,   // while-stmt
@@ -139,6 +141,8 @@ typedef enum {
   ND_ADDR,    // &x
   ND_DEREF,   // *x
   ND_SIZEOF,  // sizeof
+  ND_MEMBER,  // member
+  ND_STRUCT,
 } NodeKind;
 
 typedef enum {
@@ -146,6 +150,7 @@ typedef enum {
   T_CHAR,
   T_ADDR,
   T_ARRAY,
+  T_STRUCT,
 } TypeKind;
 
 typedef struct Type Type;
@@ -154,6 +159,7 @@ typedef struct Type {
   int offset;
   Type *ptr_to;
   size_t ary_size;
+  Map *members;
 } Type;
 
 Type *new_type(TypeKind kind, Type *ptr_to);
@@ -162,19 +168,20 @@ char *type_string(Type *type);
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
-  Node *expr;    // expression and condition
-  Node *body;    // body with if-stmt
-  Node *alter;   // body with else-stmt
-  Array *stmts;  // statements in ND_BLOCK
-  Array *args;   // arguments in ND_CALL
-  Node *lhs;     // left-child
-  Node *rhs;     // right-child
-  Node *init;    // for(init)
-  Node *inc;     // for(incdec)
-  Type *type;    // indicates node_type
-  char *name;    // function names
-  int val;       // integer-value for integer
-  LVar *var;     // local-variables
+  Node *expr;      // expression and condition
+  Node *body;      // body with if-stmt
+  Node *alter;     // body with else-stmt
+  Array *stmts;    // statements in ND_BLOCK
+  Array *members;  // members with struct
+  Array *args;     // arguments in ND_CALL
+  Node *lhs;       // left-child
+  Node *rhs;       // right-child
+  Node *init;      // for(init)
+  Node *inc;       // for(incdec)
+  Type *type;      // indicates node_type
+  char *name;      // function names
+  int val;         // integer-value for integer
+  LVar *var;       // local-variables
   LVar *locals;
 };
 char *nk_string(NodeKind nk);

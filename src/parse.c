@@ -81,6 +81,23 @@ static Node *declare(Node *node) {
 }
 
 static bool at_eof() { return token->kind == TK_EOF; }
+static Node *member(void) {
+  Node *node = (Node *)calloc(1, sizeof(Node));
+  Token *type = consume_type();
+  while (consume("*")) type = ptr_to(type);
+  Token *tok = consume_ident();
+  Node *ident = (Node *)calloc(1, sizeof(Node));
+  ident->kind = ND_LVAR;
+  ident->name = scopy(ident->name, tok->str, tok->len);
+  ident = declare(ident);
+  node = new_node(ND_MEMBER, new_node_type(type), ident);
+  if (ident->expr != NULL) {
+    node->lhs->type = new_type(T_ARRAY, node->lhs->type);
+    node->lhs->type->ary_size = ident->expr->val;
+  }
+  return node;
+}
+
 static Node *term(void) {
   Token *tok = consume_ident();
   if (tok) {
@@ -235,7 +252,18 @@ static Node *stmt(void) {
     node->body = stmt();
     if (consume_keyword(TK_ELSE, "else")) node->alter = stmt();
     return node;
+  } else if (consume_keyword(TK_STRUCT, "struct")) {
+    node->kind = ND_STRUCT;
+    node->members = new_ary();
+    consume("{");
+    while (!consume("}")) {
+      ary_push(node->members, (void *)member());
+      expect(";");
+    }
+    Token *tok = consume_ident();
+    node->name = scopy(node->name, tok->str, tok->len);
   } else if (consume_keyword(TK_WHILE, "while")) {  // while-stmt
+
     node->kind = ND_WHILE;
     expect("(");
     node->expr = expr();

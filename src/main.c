@@ -10,6 +10,10 @@ int main(int argc, char **argv) {
     content = argv[1];
   else
     content = get_contents(argv[1]);
+  if (!strncmp(argv[1], "test", 4)) {
+    // test();
+    exit(0);
+  }
 
   token = tokenize(content);
   program();
