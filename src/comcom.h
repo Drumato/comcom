@@ -115,33 +115,34 @@ LVar *find_lvar(char *str, int len);
 
 /* node.c */
 typedef enum {
-  ND_ADD,     //+
-  ND_SUB,     //-
-  ND_MUL,     //
-  ND_DIV,     // /
-  ND_ASSIGN,  // =
-  ND_DEC,     // int x;
-  ND_INIT,    // int x = 0;
-  ND_INLIST,  // {2,3,4,5};
-  ND_CALL,    // call-expression
-  ND_IF,      // if-stmt
-  ND_WHILE,   // while-stmt
-  ND_FOR,     // for-stmt
-  ND_RETURN,  // return-stmt
-  ND_FUNC,    // function
-  ND_EQ,      // ==
-  ND_NTEQ,    // !=
-  ND_GT,      // <
-  ND_GTEQ,    // <=
-  ND_NUM,     // integer
-  ND_STR,     // string
-  ND_LVAR,    // local variables
-  ND_GLOBAL,  // global variables
-  ND_BLOCK,   // { stmt* }
-  ND_ADDR,    // &x
-  ND_DEREF,   // *x
-  ND_SIZEOF,  // sizeof
-  ND_MEMBER,  // member
+  ND_ADD,       //+
+  ND_SUB,       //-
+  ND_MUL,       //
+  ND_DIV,       // /
+  ND_ASSIGN,    // =
+  ND_DEC,       // int x;
+  ND_INIT,      // int x = 0;
+  ND_INLIST,    // {2,3,4,5};
+  ND_CALL,      // call-expression
+  ND_IF,        // if-stmt
+  ND_WHILE,     // while-stmt
+  ND_FOR,       // for-stmt
+  ND_RETURN,    // return-stmt
+  ND_FUNC,      // function
+  ND_EQ,        // ==
+  ND_NTEQ,      // !=
+  ND_GT,        // <
+  ND_GTEQ,      // <=
+  ND_NUM,       // integer
+  ND_STR,       // string
+  ND_LVAR,      // local variables
+  ND_GLOBAL,    // global variables
+  ND_BLOCK,     // { stmt* }
+  ND_ADDR,      // &x
+  ND_DEREF,     // *x
+  ND_SIZEOF,    // sizeof
+  ND_MEMBER,    // member
+  ND_ACMEMBER,  // x.val
   ND_STRUCT,
 } NodeKind;
 
@@ -157,6 +158,7 @@ typedef struct Type Type;
 typedef struct Type {
   TypeKind kind;
   int offset;
+  int position;
   Type *ptr_to;
   size_t ary_size;
   Map *members;

@@ -115,6 +115,10 @@ static Node *term(void) {
         expect("]");
         return n;
       }
+      if (consume(".")) {
+        node = new_node(ND_ACMEMBER, node, term());
+        return node;
+      }
       return node;
     }
     node->kind = ND_CALL;

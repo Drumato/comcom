@@ -59,6 +59,7 @@ try 8 'int main(){ int *x; return sizeof(*x);}'
 try 8 'int main(){ int *x; return sizeof(x);}'
 try 8 'int main(){ int *x; return sizeof(sizeof(x));}'
 try 8 'int main(){ return sizeof("Drumato");}'
+try 18 'int main(){ struct{ int val; int *ptr; char c; char b;} x; return sizeof(x);}'
 try 80 'int main(){ int a[10]; return sizeof(a);}'
 try 1 'int main(){int a[2]; *a = 1; *(a + 1) = 2; return *a;}'
 try 2 'int main(){int a[2]; *a = 1; *(a + 1) = 2; return *(a+1);}'
@@ -68,6 +69,9 @@ try 2 'int main(){int a[2]; a[0] = 1; a[1] = 2; return a[1];}'
 try 3 'int main(){int a[2]; a[0] = 1; a[1] = 2; return a[0]+a[1];}'
 try 30 'int a; int main(){ a = 30; return a;}'
 try 60 'int a[2]; int main(){ a[1] = 60; return a[1];}'
+try 30 'int main(){ struct{int val;}x; x.val = 30; return x.val;} '
+try 30 'int main(){ struct{int val;int v; }x; x.v = 30; return x.v;} '
+try 60 'int main(){ struct{int val;int v; }x;x.val = 30;  x.v = 30; return x.val + x.v;} '
 echo -e "\e[33mAll Test Passed.\e[0m"
 
 rake clean

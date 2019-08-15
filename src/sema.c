@@ -130,12 +130,31 @@ static Type *walk(Node *node) {
     case ND_STRUCT: {
       node->type = new_type(T_STRUCT, NULL);
       node->type->members = new_map();
+      node->type = checktype_declare(node);
+      int offset = 0;
       for (int i = 0; i < node->members->length; i++) {
         Node *member = (Node *)node->members->data[i];
         member->type = walk(member);
-        map_put(node->type->members, member->rhs->name, member->rhs->type);
+        member->type->position = offset;
+        offset += member->type->offset;
+        map_put(node->type->members, (char *)member->rhs->name,
+                (Type *)member->rhs->type);
       }
       return node->type;
+    } break;
+    case ND_ACMEMBER: {
+      node->lhs->type = walk(node->lhs);
+      for (int i = 0; i < node->lhs->type->members->keys->length; i++) {
+        if (!strncmp(node->rhs->name,
+                     (char *)node->lhs->type->members->keys->data[i],
+                     strlen(node->rhs->name))) {
+          node->rhs->type = (Type *)node->lhs->type->members->vals->data[i];
+        }
+      }
+      if (node->rhs->type == NULL) {
+        fprintf(stderr, "not found such a member '%s'\n", node->rhs->name);
+      }
+      return node->rhs->type;
     } break;
     default:
       node->lhs->type = walk(node->lhs);
@@ -212,6 +231,15 @@ static int check_size(Type *type) {
       return 1;
       break;
     }
+    case T_STRUCT: {
+      int offset = 0;
+      for (int i = 0; i < type->members->keys->length; i++) {
+        Type *member = (Type *)map_get(type->members,
+                                       (char *)type->members->keys->data[i]);
+        offset += check_size(member);
+      }
+      return offset;
+    } break;
     default:
       fprintf(stderr, "unexpected type\n");
       return -42;
