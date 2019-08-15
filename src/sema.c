@@ -40,6 +40,14 @@ static Type *walk(Node *node) {
         walk((Node *)node->stmts->data[i]);
       }
       break;
+    case ND_INIT: {
+      node->lhs->type = walk(node->lhs);
+      node->rhs->type = walk(node->rhs);
+      if (node->lhs->type->kind != node->rhs->type->kind) {
+        fprintf(stderr, "assiging %s into %s in initialization\n",
+                type_string(node->rhs->type), type_string(node->lhs->type));
+      }
+    } break;
     case ND_DEC: {
       Type *type = node->lhs->type;
       node->rhs->type = type;
@@ -72,6 +80,7 @@ static Type *walk(Node *node) {
           node->rhs->type->ptr_to->kind == T_CHAR) {
         node->lhs->val = ary_check(strings, node->rhs->name);
       }
+      return node->rhs->type;
       break;  // check type in future
     case ND_CALL:
       for (int i = 0; i < node->args->length; i++) {

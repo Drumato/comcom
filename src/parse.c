@@ -81,7 +81,6 @@ static Node *declare(Node *node) {
 }
 
 static bool at_eof() { return token->kind == TK_EOF; }
-static Node *expr(void);
 static Node *term(void) {
   Token *tok = consume_ident();
   if (tok) {
@@ -206,7 +205,7 @@ static Node *assign(void) {
 }
 static Node *expr(void) { return assign(); }
 static Node *stmt(void) {
-  Node *node = calloc(1, sizeof(Node));
+  Node *node = (Node *)calloc(1, sizeof(Node));
   Token *type;
   if (consume_keyword(TK_RETURN, "return")) {  // return-stmt
     node->kind = ND_RETURN;
@@ -222,6 +221,11 @@ static Node *stmt(void) {
     if (ident->expr != NULL) {
       node->lhs->type = new_type(T_ARRAY, node->lhs->type);
       node->lhs->type->ary_size = ident->expr->val;
+    }
+    if (consume("=")) {
+      Node *n = (Node *)calloc(1, sizeof(Node));
+      n->kind = ND_INIT;
+      node = new_node(ND_INIT, node, new_node(ND_ASSIGN, node->rhs, assign()));
     }
   } else if (consume_keyword(TK_IF, "if")) {  // if-stmt
     node->kind = ND_IF;

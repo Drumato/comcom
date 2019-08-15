@@ -120,6 +120,7 @@ typedef enum {
   ND_DIV,     // /
   ND_ASSIGN,  // =
   ND_DEC,     // int x;
+  ND_INIT,    // int x = 0;
   ND_CALL,    // call-expression
   ND_IF,      // if-stmt
   ND_WHILE,   // while-stmt
