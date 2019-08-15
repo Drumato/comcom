@@ -140,6 +140,7 @@ static Type *walk(Node *node) {
         map_put(node->type->members, (char *)member->rhs->name,
                 (Type *)member->rhs->type);
       }
+      node->type = checktype_declare(node);
       return node->type;
     } break;
     case ND_ACMEMBER: {
@@ -249,14 +250,14 @@ static int check_size(Type *type) {
 
 static Type *checktype_declare(Node *node) {
   if (node->kind == ND_GLOBAL) {
-    if (node->type->kind == T_ARRAY) {
+    if (node->type->kind == T_ARRAY || node->type->kind == T_STRUCT) {
       node->var = set_global(node, node->name, strlen(node->name));
     } else {
       node->var = set_global(node, node->name, strlen(node->name));
     }
     node->var->is_gvar = true;
   } else {
-    if (node->type->kind == T_ARRAY) {
+    if (node->type->kind == T_ARRAY || node->type->kind == T_STRUCT) {
       node->var = set_lvar(node, node->name, strlen(node->name),
                            check_size(node->type));
     } else {

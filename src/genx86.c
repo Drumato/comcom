@@ -30,6 +30,7 @@ static void gen_lval(Node *node) {
       gen(node->lhs);
       pop_reg("rax");
       printf("  add rax, %d\n", node->rhs->type->position);
+      push_reg("rax");
       break;
     case ND_LVAR:
       mov_reg_to_reg("rax", "rbp");
@@ -120,7 +121,7 @@ void gen(Node *node) {
       return;
     case ND_LVAR:
       gen_lval(node);
-      if (node->type->kind != T_ARRAY) {
+      if (node->type->kind != T_ARRAY && node->type->kind != T_STRUCT) {
         pop_reg("rax");
         if (node->type->kind == T_CHAR) {
           printf("  movsx rax, BYTE PTR [rax]\n");
@@ -198,7 +199,6 @@ void gen(Node *node) {
   switch (node->kind) {
     case ND_ADD:
       if (node->lhs->type->kind == T_ADDR || node->lhs->type->kind == T_ARRAY) {
-        // printf("  imul rdi, %d\n", node->lhs->type->offset);
         printf("  imul rdi, %d\n", node->type->offset);
       }
       printf("  add rax, rdi\n");
