@@ -42,8 +42,9 @@ Token *tokenize(char *p) {
       continue;
     }
     if (isalpha(*p)) {
+      p++;
       char *start = p;
-      while (isalpha(*p) || *p == '_') {
+      while (isalpha(*p) || isdigit(*p) || *p == '_') {
         p++;
       }
       cur = new_token(TK_IDENT, cur, start, p - start);
