@@ -179,6 +179,7 @@ static Type *walk(Node *node) {
       if (node->rhs->type == NULL) {
         fprintf(stderr, "not found such a member '%s'\n", node->rhs->name);
       }
+      node->type = node->rhs->type;
       return node->rhs->type;
     } break;
     default:

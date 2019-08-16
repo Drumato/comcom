@@ -135,6 +135,8 @@ static Node *term(void) {
       }
       if (consume(".")) {
         node = new_node(ND_ACMEMBER, node, term());
+        node->name = (char *)malloc(0x40);
+        node->name = format("%s.%s", node->lhs->name, node->rhs->name);
         return node;
       }
       return node;
