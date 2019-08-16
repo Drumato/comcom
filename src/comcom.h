@@ -40,6 +40,7 @@ void ary_set(Array *array, int idx, void *elem);
 void ary_add(Array *array, int idx, void *elem);
 Array *aryget_range(Array *array, int start, int end);
 int ary_check(Array *array, char *val);
+int float_check(Array *array, float val);
 
 typedef struct {
   Array *keys;
@@ -71,6 +72,7 @@ typedef enum {
   TK_RETURN,
   TK_INT,
   TK_CHAR,
+  TK_FLOAT,
   TK_STR,
   TK_IF,
   TK_ELSE,
@@ -88,6 +90,9 @@ struct Token {
   TokenKind kind;
   Token *next;
   int val;
+  float float_val;
+  bool is_float;
+  bool is_double;
   char *str;
   int len;
   Token *ptr_to;
@@ -102,11 +107,12 @@ typedef struct LVar LVar;
 typedef struct Type Type;
 // ローカル変数の型
 typedef struct LVar {
-  LVar *next;  // 次の変数かNULL
-  char *name;  // 変数の名前
-  int len;     // 名前の長さ
-  int offset;  // RBPからのオフセット
-  Type *type;  // the type of local-var
+  LVar *next;       // 次の変数かNULL
+  char *name;       // 変数の名前
+  int len;          // 名前の長さ
+  int offset;       // RBPからのオフセット
+  float float_val;  // float_val
+  Type *type;       // the type of local-var
   bool is_gvar;
 } LVar;
 LVar *locals;
@@ -149,6 +155,7 @@ typedef enum {
 typedef enum {
   T_INT,
   T_CHAR,
+  T_FLOAT,
   T_ADDR,
   T_ARRAY,
   T_STRUCT,
@@ -170,29 +177,35 @@ char *type_string(Type *type);
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
-  Node *expr;      // expression and condition
-  Node *body;      // body with if-stmt
-  Node *alter;     // body with else-stmt
-  Array *stmts;    // statements in ND_BLOCK
-  Array *members;  // members with struct
-  Array *args;     // arguments in ND_CALL
-  Node *lhs;       // left-child
-  Node *rhs;       // right-child
-  Node *init;      // for(init)
-  Node *inc;       // for(incdec)
-  Type *type;      // indicates node_type
-  char *name;      // function names
-  int val;         // integer-value for integer
-  LVar *var;       // local-variables
+  Node *expr;       // expression and condition
+  Node *body;       // body with if-stmt
+  Node *alter;      // body with else-stmt
+  Array *stmts;     // statements in ND_BLOCK
+  Array *members;   // members with struct
+  Array *args;      // arguments in ND_CALL
+  Node *lhs;        // left-child
+  Node *rhs;        // right-child
+  Node *init;       // for(init)
+  Node *inc;        // for(incdec)
+  Type *type;       // indicates node_type
+  char *name;       // function names
+  int val;          // integer-value for integer
+  float float_val;  // float-value for float
+  bool is_float;
+  bool is_double;
+  bool did_cast;
+  LVar *var;  // local-variables
   LVar *locals;
 };
 char *nk_string(NodeKind nk);
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+Node *new_node_float(float val);
 Node *new_node_ident(int offset);
 Node *new_node_type(Token *tok);
 Type *inference_type(Token *tok);
 Array *strings;
+Array *floats;
 
 Node *code[100];
 
@@ -204,6 +217,7 @@ void semantic(void);
 void gen(Node *node);
 void gen_global(void);
 void gen_strings(void);
+void gen_floats(void);
 
 void warning(char *message);
 void info(char *message);

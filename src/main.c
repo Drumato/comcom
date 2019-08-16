@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
   gen_global();
   printf("  .section .rodata\n");
   gen_strings();
+  // gen_floats();
   printf("  .text\n");
   printf("  .global main\n");
 

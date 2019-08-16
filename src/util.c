@@ -88,6 +88,15 @@ int ary_check(Array *array, char *val) {
   }
   return ret_idx;
 }
+int float_check(Array *array, float val) {
+  int ret_idx = -1;
+  for (int i = 0; i < array->length; i++) {
+    if (*(float *)array->data[i] == val) {
+      ret_idx = i;
+    }
+  }
+  return ret_idx;
+}
 void *ary_pop(Array *array) {
   if (array->length == 0) {
     fprintf(stderr, "invalid access\nnot enough length to pop the value \n");

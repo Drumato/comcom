@@ -5,10 +5,25 @@ char *caller_regs32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d", NULL};
 char *caller_regs16[] = {"di", "si", "dx", "cx", "r8w", "r9w", NULL};
 char *caller_regs8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b", NULL};
 int label = 1;
-static void push_reg(char *reg) { printf("  push %s\n", reg); }
+static void push_reg(char *reg) {
+  if (!strncmp(reg, "xmm0", 4) || !strncmp(reg, "xmm1", 4)) {
+    printf("  sub rsp, 8\n");
+    printf("  movss [rsp], %s\n", reg);
+  } else {
+    printf("  push %s\n", reg);
+  }
+}
+static void pop_reg(char *reg) {
+  if (!strncmp(reg, "xmm0", 4) || !strncmp(reg, "xmm1", 4)) {
+    printf("  movss %s, [rsp]\n", reg);
+    printf("  add rsp, 8\n");
+  } else {
+    printf("  pop %s\n", reg);
+  }
+}
 static void push_const(int val) { printf("  push %d\n", val); }
 static void push_string(int val) { printf("  push offset .LS%d\n", val); }
-static void pop_reg(char *reg) { printf("  pop %s\n", reg); }
+static void push_float(float val) { printf("  push %d\n", *(int *)&val); }
 static void mov_reg_to_reg(char *dst, char *src) {
   printf("  mov %s, %s\n", dst, src);
 }
@@ -83,17 +98,43 @@ void gen(Node *node) {
       printf("  jmp .Lbegin%d\n", label);
       printf(".Lend%d:\n", label++);
       return;
-    case ND_CALL:
-      for (int i = 0; i < node->args->length; i++)
-        gen((Node *)node->args->data[i]);
+    case ND_INIT: {
+      gen(node->rhs);
+      return;
+    }
+    case ND_CALL: {
+      Node *arg;
+      int float_num = 0;
       for (int i = 0; i < node->args->length; i++) {
-        char *reg = caller_regs64[i];
-        if (reg == NULL) error("exhausted register");
-        pop_reg(reg);
+        arg = (Node *)node->args->data[i];
+        gen(arg);
       }
+      for (int i = 0; i < node->args->length; i++) {
+        arg = (Node *)node->args->data[i];
+        char *reg;
+        if (arg->type->kind == T_FLOAT) {
+          float_num++;
+          reg = format("xmm%d", i);
+        } else {
+          reg = caller_regs64[i];
+        }
+        if (reg == NULL) error("exhausted register");
+        if (arg->type && arg->type->kind == T_FLOAT) {
+          pop_reg("xmm0");
+        } else {
+          pop_reg(reg);
+        }
+      }
+      printf("  push rbp\n");
+      printf("  mov rbp, rsp\n");
+      printf("  and rsp, -16\n");
+      printf("  mov rax, %d\n", float_num);
       printf("  call %s\n", node->name);
+      printf("  mov rsp, rbp\n");
+      printf("  pop rbp\n");
       push_reg("rax");
       return;
+    }
     case ND_FOR:
       if (node->init) gen(node->init);  // initialization
       printf(".Lbegin%d:\n", label);
@@ -108,13 +149,21 @@ void gen(Node *node) {
       return;
     case ND_RETURN:
       gen(node->lhs);
-      pop_reg("rax");
+      if (node->lhs->type && node->lhs->type->kind == T_FLOAT) {
+        pop_reg("xmm0");
+      } else {
+        pop_reg("rax");
+      }
       mov_reg_to_reg("rsp", "rbp");
       printf("  pop rbp\n");
       printf("  ret\n");
       return;
     case ND_NUM:
-      push_const(node->val);
+      if (node->is_float) {
+        push_float(node->float_val);
+      } else {
+        push_const(node->val);
+      }
       return;
     case ND_STR:
       push_string(ary_check(strings, node->name));
@@ -134,14 +183,23 @@ void gen(Node *node) {
     case ND_ASSIGN:
       gen_lval(node->lhs);
       gen(node->rhs);
-      pop_reg("rdi");
+      if (node->rhs->type->kind == T_FLOAT ||
+          (node->did_cast && node->rhs->type->kind == T_INT)) {
+        pop_reg("xmm0");
+      } else {
+        pop_reg("rdi");
+      }
       pop_reg("rax");
       if (node->lhs->type->kind == T_CHAR) {
         printf("  mov [rax], dil\n");
+      } else if (node->lhs->type->kind == T_FLOAT) {
+        printf("  movss [rax], xmm0\n");
+        push_reg("xmm0");
+
       } else {
         printf("  mov [rax],rdi\n");
+        push_reg("rdi");
       }
-      push_reg("rdi");
       return;
     case ND_BLOCK:
       for (int i = 0; i < node->stmts->length; i++) {
@@ -194,27 +252,52 @@ void gen(Node *node) {
   }
   gen(node->lhs);
   gen(node->rhs);
-  pop_reg("rdi");
-  pop_reg("rax");
+  if (node->rhs->type->kind == T_FLOAT) {
+    pop_reg("xmm1");
+  } else {
+    pop_reg("rdi");
+  }
+  if (node->lhs->type->kind == T_FLOAT) {
+    pop_reg("xmm0");
+  } else {
+    pop_reg("rax");
+  }
   switch (node->kind) {
     case ND_ADD:
-      if (node->lhs->type->kind == T_ADDR || node->lhs->type->kind == T_ARRAY) {
+      if (node->type->kind == T_ADDR || node->type->kind == T_ARRAY) {
         printf("  imul rdi, %d\n", node->type->offset);
       }
-      printf("  add rax, rdi\n");
+      if (node->type->kind == T_FLOAT) {
+        printf("  addss xmm0, xmm1\n");
+        break;
+      } else {
+        printf("  add rax, rdi\n");
+      }
       break;
     case ND_SUB:
       if (node->lhs->type->kind == T_ADDR || node->lhs->type->kind == T_ARRAY) {
         printf("  imul rdi, %d\n", node->lhs->type->offset);
       }
-      printf("  sub rax, rdi\n");
+      if (node->type->kind == T_FLOAT) {
+        printf("  subss xmm0, xmm1\n");
+      } else {
+        printf("  sub rax, rdi\n");
+      }
       break;
     case ND_MUL:
-      printf("  imul rax, rdi\n");
+      if (node->type->kind == T_FLOAT) {
+        printf("  mulss xmm0, xmm1\n");
+      } else {
+        printf("  imul rax, rdi\n");
+      }
       break;
     case ND_DIV:
-      printf("  cqo\n");
-      printf("  idiv rdi\n");
+      if (node->type->kind == T_FLOAT) {
+        printf("  divss xmm0, xmm1\n");
+      } else {
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+      }
       break;
     case ND_EQ:
       compare("sete");
@@ -231,13 +314,20 @@ void gen(Node *node) {
     default:
       break;
   }
-  push_reg("rax");
+  if (node->type->kind == T_FLOAT) {
+    push_reg("xmm0");
+  } else {
+    push_reg("rax");
+  }
 }
 void gen_global(void) {
   for (int i = 0; i < globals->keys->length; i++) {
     LVar *grob = (LVar *)globals->vals->data[i];
     printf(".%s:\n", grob->name);
-    printf("  .zero %d\n", grob->type->offset);
+    if (grob->type->kind == T_FLOAT) {
+    } else {
+      printf("  .zero %d\n", grob->type->offset);
+    }
   }
 }
 void gen_strings(void) {
@@ -245,5 +335,12 @@ void gen_strings(void) {
     char *strlit = (char *)strings->data[i];
     printf(".LS%d:\n", i);
     printf("  .string \"%s\"\n", strlit);
+  }
+}
+void gen_floats(void) {
+  for (int i = 0; i < floats->length; i++) {
+    printf("  .align 4\n");
+    printf(".LF%d:\n", i);
+    printf("  .long %d\n", *(int *)floats->data[i]);
   }
 }

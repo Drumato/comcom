@@ -13,6 +13,13 @@ Node *new_node_num(int val) {
   node->val = val;
   return node;
 }
+Node *new_node_float(float val) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_NUM;
+  node->is_float = true;
+  node->float_val = val;
+  return node;
+}
 
 Node *new_node_type(Token *tok) {
   Node *node = calloc(1, sizeof(Node));
@@ -21,6 +28,8 @@ Node *new_node_type(Token *tok) {
     type = new_type(T_INT, NULL);
   } else if (!strncmp("char", tok->str, 4)) {
     type = new_type(T_CHAR, NULL);
+  } else if (!strncmp("float", tok->str, 5)) {
+    type = new_type(T_FLOAT, NULL);
   }
   while (tok->ptr_to != NULL) {
     type = new_type(T_ADDR, type);
@@ -39,6 +48,10 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
     }
     case T_CHAR: {
       offset = 1;
+      break;
+    }
+    case T_FLOAT: {
+      offset = 4;
       break;
     }
     case T_ADDR:
@@ -66,6 +79,9 @@ Type *inference_type(Token *tok) {
   } else if (tok->kind == TK_CHAR && strlen("char") == tok->len &&
              !memcmp(tok->str, "char", tok->len)) {
     type = new_type(T_CHAR, NULL);
+  } else if (tok->kind == TK_FLOAT && strlen("float") == tok->len &&
+             !memcmp(tok->str, "float", tok->len)) {
+    type = new_type(T_CHAR, NULL);
   }
   while (tok->ptr_to != NULL) {
     type = new_type(T_ADDR, type);
@@ -83,6 +99,8 @@ char *type_string(Type *type) {
       return "Integer";
     case T_CHAR:
       return "Char";
+    case T_FLOAT:
+      return "Float";
     case T_ADDR:
       return format("address_of -> %s", type_string(type->ptr_to));
     case T_ARRAY:

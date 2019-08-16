@@ -37,6 +37,10 @@ static Token *consume_type(void) {
               !memcmp(token->str, "char", token->len))) {
     tok = token;
     token = token->next;
+  } else if ((token->kind == TK_FLOAT && strlen("float") == token->len &&
+              !memcmp(token->str, "float", token->len))) {
+    tok = token;
+    token = token->next;
   }
   return tok;
 }
@@ -66,11 +70,20 @@ static void expect(char *op) {
   token = token->next;
 }
 
-static int expect_number() {
-  if (token->kind != TK_NUM) error("not number");
-  int val = token->val;
-  token = token->next;
-  return val;
+static Token *expect_number() {
+  Token *tok;
+  switch (token->kind) {
+    case TK_NUM:
+    case TK_FLOAT: {
+      tok = token;
+      token = token->next;
+      return tok;
+    } break;
+    default:
+      error("not number");
+      break;
+  }
+  return NULL;
 }
 static Node *expr(void);
 static Node *declare(Node *node) {
@@ -157,11 +170,17 @@ static Node *term(void) {
     expect(")");
     return node;
   }
-  return new_node_num(expect_number());
+  tok = expect_number();
+  if (tok->is_float) {
+    ary_push(floats, (void *)&tok->float_val);
+    return new_node_float(tok->float_val);
+  } else {
+    return new_node_num(tok->val);
+  }
 }
 static Node *unary(void) {
-  if (consume("+")) return term();
-  if (consume("-")) return new_node(ND_SUB, new_node_num(0), term());
+  if (consume("+")) return unary();
+  if (consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
   if (consume("*")) return new_node(ND_DEREF, unary(), new_node_num(0));
   if (consume("&")) return new_node(ND_ADDR, unary(), new_node_num(0));
   if (consume_keyword(TK_SIZEOF, "sizeof")) {
@@ -367,6 +386,7 @@ static Node *toplevel(void) {
 }
 void program(void) {
   strings = new_ary();
+  floats = new_ary();
   int i = 0;
   while (!at_eof()) code[i++] = toplevel();
   code[i] = NULL;

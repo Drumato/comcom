@@ -8,10 +8,10 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int length) {
   return tok;
 }
 static Token *multilength(char *p, Token *cur) {
-  char *keywords[] = {"return", "if",   "else",   "while",  "for",
-                      "int",    "char", "sizeof", "struct", NULL};
-  TokenKind tk_kinds[] = {TK_RETURN, TK_IF,   TK_ELSE,   TK_WHILE, TK_FOR,
-                          TK_INT,    TK_CHAR, TK_SIZEOF, TK_STRUCT};
+  char *keywords[] = {"return", "if",    "else",   "while",  "for", "int",
+                      "char",   "float", "sizeof", "struct", NULL};
+  TokenKind tk_kinds[] = {TK_RETURN, TK_IF,   TK_ELSE,  TK_WHILE,  TK_FOR,
+                          TK_INT,    TK_CHAR, TK_FLOAT, TK_SIZEOF, TK_STRUCT};
   for (int i = 0; keywords[i] != NULL; i++) {
     if (!strncmp(p, keywords[i], strlen(keywords[i])) &&
         !isalnum(p[strlen(keywords[i])]))
@@ -106,6 +106,13 @@ Token *tokenize(char *p) {
       cur = new_token(TK_NUM, cur, p, 0);
       char *start = p;
       cur->val = strtol(p, &p, base);
+      if (*p == '.') {
+        p++;
+        while (isdigit(*p)) p++;
+        p = start;
+        cur->float_val = strtof(p, &p);
+        cur->is_float = true;
+      }
       cur->len = p - start;
       continue;
     }

@@ -4,6 +4,7 @@ LVar *find_lvar(char *str, int len);
 static LVar *set_lvar(Node *node, char *name, int length, int offset);
 static LVar *set_global(Node *node, char *name, int length);
 static Type *checktype_declare(Node *node);
+static Type *checktype_binop(Node *lhs, Node *rhs);
 static Type *walk(Node *node);
 static int check_size(Type *type);
 void semantic(void) {
@@ -31,7 +32,7 @@ static Type *walk(Node *node) {
         arg->var =
             set_lvar(arg, arg->name, strlen(arg->name), arg->type->offset);
         arg->var->type = arg->type;
-        walk(arg);
+        arg->type = walk(arg);
       }
       walk(node->body);
       node->locals = locals;
@@ -44,10 +45,7 @@ static Type *walk(Node *node) {
     case ND_INIT: {
       node->lhs->type = walk(node->lhs);
       node->rhs->type = walk(node->rhs);
-      if (node->lhs->type->kind != node->rhs->type->kind) {
-        fprintf(stderr, "assiging %s into %s in initialization\n",
-                type_string(node->rhs->type), type_string(node->lhs->type));
-      }
+      return node->lhs->type;
     } break;
     case ND_DEC: {
       Type *type = node->lhs->type;
@@ -61,11 +59,33 @@ static Type *walk(Node *node) {
           node->rhs->type->ptr_to->kind == T_CHAR) {
         node->lhs->val = ary_check(strings, node->rhs->name);
       }
+      if (node->lhs->type->kind == T_INT && node->rhs->type->kind == T_FLOAT) {
+        info(format("implicit type conversion %s when assigning %s into '%s'",
+                    type_string(node->lhs->type), type_string(node->rhs->type),
+                    node->lhs->name));
+        node->lhs->type = node->rhs->type;
+        if (node->rhs->is_float) node->rhs->is_float = false;
+        node->rhs->val = (int)node->rhs->float_val;
+        node->did_cast = true;
+      } else if (node->lhs->type->kind == T_FLOAT &&
+                 node->rhs->type->kind == T_INT) {
+        info(format("implicit type conversion %s when assigning %s into '%s'",
+                    type_string(node->lhs->type), type_string(node->rhs->type),
+                    node->lhs->name));
+        node->rhs->type = node->lhs->type;
+        if (!node->rhs->is_float) node->rhs->is_float = true;
+        node->rhs->float_val = (float)node->rhs->val;
+        node->did_cast = true;
+      }
+      if (node->lhs->var) {
+        node->lhs->var->type = node->lhs->type;
+      }
       return node->rhs->type;
       break;  // check type in future
     case ND_CALL:
       for (int i = 0; i < node->args->length; i++) {
-        walk((Node *)node->args->data[i]);
+        Node *arg = (Node *)node->args->data[i];
+        arg->type = walk(arg);
       }
       break;
     case ND_IF:
@@ -93,7 +113,11 @@ static Type *walk(Node *node) {
       return type;
     } break;
     case ND_NUM:
-      return new_type(T_INT, NULL);
+      if (node->is_float) {
+        return new_type(T_FLOAT, NULL);
+      } else {
+        return new_type(T_INT, NULL);
+      }
       break;
     case ND_LVAR: {
       LVar *lvar;
@@ -160,23 +184,13 @@ static Type *walk(Node *node) {
     default:
       node->lhs->type = walk(node->lhs);
       node->rhs->type = walk(node->rhs);
-      if (node->lhs->type->kind == T_CHAR) {
-        node->type = new_type(T_CHAR, NULL);
-      } else if (node->lhs->type->kind == T_INT &&
-                 node->rhs->type->kind == T_INT) {
-        node->type = new_type(T_INT, NULL);
-      } else if ((node->lhs->type->kind == T_ADDR ||
-                  node->lhs->type->kind == T_ARRAY) &&
-                 node->rhs->type->kind == T_INT) {
-        node->type = new_type(T_ADDR, node->lhs->type->ptr_to);
+      node->type = checktype_binop(node->lhs, node->rhs);
+      if (node->type->kind == T_ADDR || node->type->kind == T_ARRAY) {
         if (node->kind == ND_ADD) {
           node->kind = ND_SUB;
         } else if (node->kind == ND_SUB) {
           node->kind = ND_ADD;
         }
-      } else if (node->lhs->type->kind == T_ARRAY &&
-                 node->rhs->type->kind == T_INT) {
-        node->type = new_type(T_ARRAY, node->lhs->type->ptr_to);
       }
       return node->type;
       break;
@@ -223,6 +237,10 @@ static int check_size(Type *type) {
       return 8;
       break;
     }
+    case T_FLOAT: {
+      return 4;
+      break;
+    }
     case T_ARRAY: {
       int offset = check_size(type->ptr_to);
       return type->ary_size * offset;
@@ -267,4 +285,46 @@ static Type *checktype_declare(Node *node) {
   }
   node->var->type = node->type;
   return node->type;
+}
+
+static Type *checktype_binop(Node *lhs, Node *rhs) {
+  switch (lhs->type->kind) {
+    case T_CHAR:
+      if (rhs->type->kind == T_INT) {
+        return new_type(T_INT, NULL);
+      }
+      return new_type(T_CHAR, NULL);
+      break;
+    case T_INT:
+      if (rhs->type->kind != T_FLOAT) {
+        return new_type(T_INT, NULL);
+      }
+      info(format("implicit type conversion %s of left value to %s",
+                  type_string(lhs->type), type_string(rhs->type)));
+      lhs->type = new_type(T_INT, NULL);
+      if (!lhs->is_float) lhs->is_float = true;
+      lhs->float_val = (float)lhs->val;
+      return new_type(T_FLOAT, NULL);
+      break;
+    case T_FLOAT:
+      if (rhs->type->kind != T_INT) {
+        return new_type(T_FLOAT, NULL);
+      }
+      info(format("implicit type conversion %s of right value to %s",
+                  type_string(rhs->type), type_string(lhs->type)));
+      rhs->type = new_type(T_INT, NULL);
+      if (!rhs->is_float) rhs->is_float = true;
+      rhs->float_val = (float)rhs->val;
+      return new_type(T_FLOAT, NULL);
+      break;
+    case T_ADDR:
+    case T_ARRAY:
+      if (rhs->type->kind == T_INT) {
+        return lhs->type;
+      }
+      break;
+    default:
+      break;
+  }
+  return lhs->type;
 }
