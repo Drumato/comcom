@@ -117,7 +117,8 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    warning("unable to tokenize");
+    warning(format("unable to tokenize got '%c'", *p));
+    exit(1);
   }
 
   new_token(TK_EOF, cur, p, 0);

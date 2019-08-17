@@ -72,6 +72,7 @@ Type *new_type(TypeKind kind, Type *ptr_to) {
 }
 
 Type *inference_type(Token *tok) {
+  assert(tok);
   Type *type;
   if (tok->kind == TK_INT && strlen("int") == tok->len &&
       !memcmp(tok->str, "int", tok->len)) {

@@ -39,7 +39,8 @@ static Type *walk(Node *node) {
       break;
     case ND_BLOCK:
       for (int i = 0; i < node->stmts->length; i++) {
-        walk((Node *)node->stmts->data[i]);
+        ((Node *)node->stmts->data[i])->type =
+            walk((Node *)node->stmts->data[i]);
       }
       break;
     case ND_INIT: {
@@ -123,7 +124,8 @@ static Type *walk(Node *node) {
       LVar *lvar;
       lvar = find_lvar(node->name, strlen(node->name));
       if (!lvar) lvar = (LVar *)map_get(globals, node->name);
-
+      if (!lvar) warning(format("undefined variable '%s'", node->name));
+      assert(lvar);
       node->var = lvar;
       node->type = lvar->type;
       return node->type;
@@ -154,7 +156,6 @@ static Type *walk(Node *node) {
     case ND_STRUCT: {
       node->type = new_type(T_STRUCT, NULL);
       node->type->members = new_map();
-      node->type = checktype_declare(node);
       int offset = 0;
       for (int i = 0; i < node->members->length; i++) {
         Node *member = (Node *)node->members->data[i];
@@ -297,15 +298,19 @@ static Type *checktype_binop(Node *lhs, Node *rhs) {
       return new_type(T_CHAR, NULL);
       break;
     case T_INT:
-      if (rhs->type->kind != T_FLOAT) {
-        return new_type(T_INT, NULL);
+      if (rhs->type->kind == T_INT) {
+        return lhs->type;
       }
-      info(format("implicit type conversion %s of left value to %s",
-                  type_string(lhs->type), type_string(rhs->type)));
-      lhs->type = new_type(T_INT, NULL);
-      if (!lhs->is_float) lhs->is_float = true;
-      lhs->float_val = (float)lhs->val;
-      return new_type(T_FLOAT, NULL);
+      if (T_INT < rhs->type->kind) {
+        info(format("implicit type conversion %s of left value to %s",
+                    type_string(lhs->type), type_string(rhs->type)));
+        lhs->type = rhs->type;
+        if (lhs->type->kind == T_FLOAT && !lhs->is_float) {
+          lhs->is_float = true;
+          lhs->float_val = (float)lhs->val;
+        }
+      }
+      return lhs->type;
       break;
     case T_FLOAT:
       if (rhs->type->kind != T_INT) {
@@ -313,7 +318,7 @@ static Type *checktype_binop(Node *lhs, Node *rhs) {
       }
       info(format("implicit type conversion %s of right value to %s",
                   type_string(rhs->type), type_string(lhs->type)));
-      rhs->type = new_type(T_INT, NULL);
+      rhs->type = new_type(T_FLOAT, NULL);
       if (!rhs->is_float) rhs->is_float = true;
       rhs->float_val = (float)rhs->val;
       return new_type(T_FLOAT, NULL);

@@ -21,6 +21,8 @@ static char *scopy(char *src, char *dst, int length) {
   return src;
 }
 static Token *ptr_to(Token *tok) {
+  assert(tok);
+  assert(tok->str);
   Token *token = (Token *)calloc(1, sizeof(Token));
   token->str = scopy(token->str, tok->str, tok->len);
   token->kind = TK_ADDR;
@@ -42,6 +44,7 @@ static Token *consume_type(void) {
     tok = token;
     token = token->next;
   }
+  while (tok && consume("*")) tok = ptr_to(tok);
   return tok;
 }
 static bool consume_block(void) {
@@ -80,7 +83,8 @@ static Token *expect_number() {
       return tok;
     } break;
     default:
-      error("not number");
+      warning(format("unexpected %s", token->str));
+      exit(1);
       break;
   }
   return NULL;
@@ -94,6 +98,7 @@ static Node *declare(Node *node) {
   return node;
 }
 static Node *parse_ident(Token *tok) {
+  assert(tok);
   Node *ident = (Node *)calloc(1, sizeof(Node));
   ident->kind = ND_LVAR;
   ident->name = scopy(ident->name, tok->str, tok->len);
@@ -104,7 +109,6 @@ static bool at_eof() { return token->kind == TK_EOF; }
 static Node *member(void) {
   Node *node = (Node *)calloc(1, sizeof(Node));
   Token *type = consume_type();
-  while (consume("*")) type = ptr_to(type);
   Token *tok = consume_ident();
   Node *ident = parse_ident(tok);
   ident = declare(ident);
@@ -256,7 +260,6 @@ static Node *stmt(void) {
     node->kind = ND_RETURN;
     node->lhs = expr();
   } else if ((type = consume_type()) != NULL) {
-    while (consume("*")) type = ptr_to(type);
     Token *tok = consume_ident();
     Node *ident = parse_ident(tok);
     ident = declare(ident);
@@ -321,7 +324,7 @@ static Node *stmt(void) {
   } else {
     node = expr();
   }
-  if (!consume(";")) error("'%s' is not ';'", token->str);
+  if (!consume(";")) error("statement should be end with ';'", token->str);
   return node;
 }
 static Node *func(Node *node) {
@@ -330,7 +333,6 @@ static Node *func(Node *node) {
   Node *arg;
   if (!consume(")")) {
     Token *type = consume_type();
-    while (consume("*")) type = ptr_to(type);
     Token *tok = consume_ident();
     arg = parse_ident(tok);
     arg->type = inference_type(type);
@@ -341,7 +343,6 @@ static Node *func(Node *node) {
       }
       expect(",");
       Token *type = consume_type();
-      while (consume("*")) type = ptr_to(type);
       Token *tok = consume_ident();
       arg = parse_ident(tok);
       arg->type = inference_type(type);
@@ -360,7 +361,6 @@ static Node *toplevel(void) {
   Node *node = calloc(1, sizeof(Node));
   Token *tok;
   Token *type;
-  while (consume("*")) type = ptr_to(type);
   if ((type = consume_type()) == NULL) {
     error("toplevel must be started with type_name: got '%s'", token->str);
   }
@@ -382,7 +382,7 @@ static Node *toplevel(void) {
     if (node->kind != ND_DEC || node->rhs->kind != ND_GLOBAL) {
       error("expected declaration global-var");
     }
-    if (!consume(";")) error("'%s' is not ';'", token->str);
+    if (!consume(";")) error("statement should be end with ';'", token->str);
   }
   return node;
 }
